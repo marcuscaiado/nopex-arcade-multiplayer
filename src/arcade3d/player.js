@@ -2,8 +2,13 @@ import * as THREE from 'three';
 import { playFootstep } from './audio.js';
 
 export class ArcadePlayer {
-  constructor(scene) {
+  constructor(scene, identity = null) {
     this.scene = scene;
+    this.identity = identity || { tag: 'MARC1', color: 0x00f5ff, colorHex: '#00f5ff' };
+    this.tag = (this.identity.tag || 'MARC1').slice(0, 5).toUpperCase();
+    this.colorNum = this.identity.color || 0x00f5ff;
+    this.colorHex = this.identity.colorHex || '#00f5ff';
+
     // Spawn in front of central rotunda facing the arcade cabinets
     this.x = 0;
     this.y = 0;
@@ -23,7 +28,62 @@ export class ArcadePlayer {
     this.navTarget = null; // { x, z, onArrival }
 
     this.createAvatarMesh();
+    this.createNameTagSprite();
     this.bindKeyboard();
+  }
+
+  setIdentity(identity) {
+    if (!identity) return;
+    this.identity = identity;
+    this.tag = (identity.tag || 'MARC1').slice(0, 5).toUpperCase();
+    this.colorNum = identity.color || 0x00f5ff;
+    this.colorHex = identity.colorHex || '#00f5ff';
+    if (this.torso) this.torso.material.color.setHex(this.colorNum);
+    if (this.leftFoot) this.leftFoot.material.color.setHex(this.colorNum);
+    if (this.rightFoot) this.rightFoot.material.color.setHex(this.colorNum);
+    if (this.nameSprite) {
+      this.group.remove(this.nameSprite);
+      this.createNameTagSprite();
+    }
+  }
+
+  createNameTagSprite() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 320;
+    canvas.height = 110;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = 'rgba(8, 9, 16, 0.88)';
+    ctx.strokeStyle = this.colorHex;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.roundRect(10, 10, canvas.width - 20, canvas.height - 20, 24);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.font = 'bold 36px "Press Start 2P", monospace, sans-serif';
+    ctx.fillStyle = '#ffd32a';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = '#ffd32a';
+    ctx.shadowBlur = 8;
+    ctx.fillText(this.tag, canvas.width / 2, 42);
+
+    ctx.shadowBlur = 0;
+    ctx.font = 'bold 16px "Outfit", sans-serif';
+    ctx.fillStyle = this.colorHex;
+    ctx.fillText('VOCÊ', canvas.width / 2, 78);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const spriteMat = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      depthTest: false
+    });
+    this.nameSprite = new THREE.Sprite(spriteMat);
+    this.nameSprite.position.set(0, 2.35, 0);
+    this.nameSprite.scale.set(1.6, 0.55, 1.0);
+    this.group.add(this.nameSprite);
   }
 
   setNavigationTarget(x, z, onArrival = null) {
@@ -41,7 +101,7 @@ export class ArcadePlayer {
     // 1. Torso (Neon Cyber Hoodie)
     const torsoGeo = new THREE.CylinderGeometry(0.38, 0.32, 0.8, 16);
     const torsoMat = new THREE.MeshStandardMaterial({
-      color: 0x00f5ff,
+      color: this.colorNum,
       roughness: 0.3,
       metalness: 0.2
     });
@@ -105,7 +165,7 @@ export class ArcadePlayer {
 
     // 4. Little Kawaii Feet (Left & Right)
     const footGeo = new THREE.SphereGeometry(0.14, 12, 12);
-    const footMat = new THREE.MeshStandardMaterial({ color: 0xff007f, roughness: 0.3 });
+    const footMat = new THREE.MeshStandardMaterial({ color: this.colorNum, roughness: 0.3 });
 
     this.leftFoot = new THREE.Mesh(footGeo, footMat);
     this.leftFoot.position.set(-0.2, 0.14, 0);
@@ -138,14 +198,14 @@ export class ArcadePlayer {
     ctx.fillStyle = '#060814';
     ctx.fillRect(0, 0, 256, 128);
 
-    ctx.fillStyle = '#00f5ff';
-    ctx.shadowColor = '#00f5ff';
+    ctx.fillStyle = this.colorHex;
+    ctx.shadowColor = this.colorHex;
     ctx.shadowBlur = 12;
 
     if (isBlinking) {
       // Closed happy line eyes
       ctx.lineWidth = 6;
-      ctx.strokeStyle = '#00f5ff';
+      ctx.strokeStyle = this.colorHex;
       ctx.beginPath();
       ctx.arc(85, 64, 22, 0.2, Math.PI - 0.2, false);
       ctx.stroke();
@@ -178,40 +238,17 @@ export class ArcadePlayer {
 
   bindKeyboard() {
     window.addEventListener('keydown', (e) => {
-      // Ignore inputs if typing in an input field
-      if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
-
-      switch (e.code) {
-        case 'KeyW':
-        case 'ArrowUp':
-          this.keys.forward = true; break;
-        case 'KeyS':
-        case 'ArrowDown':
-          this.keys.backward = true; break;
-        case 'KeyA':
-        case 'ArrowLeft':
-          this.keys.left = true; break;
-        case 'KeyD':
-        case 'ArrowRight':
-          this.keys.right = true; break;
-      }
+      if (['ArrowUp', 'KeyW'].includes(e.code)) this.keys.forward = true;
+      if (['ArrowDown', 'KeyS'].includes(e.code)) this.keys.backward = true;
+      if (['ArrowLeft', 'KeyA'].includes(e.code)) this.keys.left = true;
+      if (['ArrowRight', 'KeyD'].includes(e.code)) this.keys.right = true;
     });
 
     window.addEventListener('keyup', (e) => {
-      switch (e.code) {
-        case 'KeyW':
-        case 'ArrowUp':
-          this.keys.forward = false; break;
-        case 'KeyS':
-        case 'ArrowDown':
-          this.keys.backward = false; break;
-        case 'KeyA':
-        case 'ArrowLeft':
-          this.keys.left = false; break;
-        case 'KeyD':
-        case 'ArrowRight':
-          this.keys.right = false; break;
-      }
+      if (['ArrowUp', 'KeyW'].includes(e.code)) this.keys.forward = false;
+      if (['ArrowDown', 'KeyS'].includes(e.code)) this.keys.backward = false;
+      if (['ArrowLeft', 'KeyA'].includes(e.code)) this.keys.left = false;
+      if (['ArrowRight', 'KeyD'].includes(e.code)) this.keys.right = false;
     });
   }
 
@@ -220,7 +257,7 @@ export class ArcadePlayer {
     this.joystickVector.y = y;
   }
 
-  update(delta, roomBounds, cabinets) {
+  update(delta, roomBounds, cabinets, camera = null) {
     let moveX = 0;
     let moveZ = 0;
 
@@ -249,53 +286,54 @@ export class ArcadePlayer {
         this.navTarget = null;
         if (onArrival) onArrival();
       } else {
+        // Drive towards nav target smoothly
         moveX = dx / dist;
         moveZ = dz / dist;
       }
     }
 
-    const length = Math.hypot(moveX, moveZ);
-    if (length > 0.01) {
-      moveX /= length;
-      moveZ /= length;
-      this.isMoving = true;
+    const len = Math.hypot(moveX, moveZ);
+    if (len > 0.01) {
+      moveX /= len;
+      moveZ /= len;
 
-      // Calculate target rotation angle facing movement direction
+      this.isMoving = true;
       this.targetRotation = Math.atan2(moveX, moveZ);
 
-      // Desired next position
-      const step = this.speed * delta;
-      let nextX = this.x + moveX * step;
-      let nextZ = this.z + moveZ * step;
+      // Attempt movement with wall & cabinet slide-collision
+      const stepDist = this.speed * delta;
+      const nextX = this.x + moveX * stepDist;
+      const nextZ = this.z + moveZ * stepDist;
 
-      // 1. Boundary Clamping
-      nextX = Math.max(roomBounds.minX + this.radius, Math.min(roomBounds.maxX - this.radius, nextX));
-      nextZ = Math.max(roomBounds.minZ + this.radius, Math.min(roomBounds.maxZ - this.radius, nextZ));
-
-      // 2. Continuous Circle-to-AABB Cabinet Collision with Smooth Gliding
-      for (const cab of cabinets) {
-        const box = cab.collisionBox;
-        const closestX = Math.max(box.minX, Math.min(nextX, box.maxX));
-        const closestZ = Math.max(box.minZ, Math.min(nextZ, box.maxZ));
-
-        let diffX = nextX - closestX;
-        let diffZ = nextZ - closestZ;
-        const distSq = diffX * diffX + diffZ * diffZ;
-
-        if (distSq < this.radius * this.radius) {
-          const dist = Math.sqrt(distSq);
-          if (dist > 0.0001) {
-            const overlap = this.radius - dist;
-            nextX += (diffX / dist) * overlap;
-            nextZ += (diffZ / dist) * overlap;
-          } else {
-            nextZ += this.radius;
+      // X movement check
+      let allowX = true;
+      if (roomBounds && (nextX - this.radius < roomBounds.minX || nextX + this.radius > roomBounds.maxX)) {
+        allowX = false;
+      }
+      if (cabinets && allowX) {
+        for (const cab of cabinets) {
+          if (cab.collider && cab.collider.intersectsSphere(new THREE.Vector3(nextX, 0, this.z), this.radius)) {
+            allowX = false;
+            break;
           }
         }
       }
+      if (allowX) this.x = nextX;
 
-      this.x = nextX;
-      this.z = nextZ;
+      // Z movement check
+      let allowZ = true;
+      if (roomBounds && (nextZ - this.radius < roomBounds.minZ || nextZ + this.radius > roomBounds.maxZ)) {
+        allowZ = false;
+      }
+      if (cabinets && allowZ) {
+        for (const cab of cabinets) {
+          if (cab.collider && cab.collider.intersectsSphere(new THREE.Vector3(this.x, 0, nextZ), this.radius)) {
+            allowZ = false;
+            break;
+          }
+        }
+      }
+      if (allowZ) this.z = nextZ;
 
       // Footstep sound
       this.walkCycle += delta * 14.0;
@@ -336,6 +374,11 @@ export class ArcadePlayer {
       this.lastBlinkState = isBlink;
       this.renderVisorEyes(isBlink);
       this.visorTex.needsUpdate = true;
+    }
+
+    // Billboard name tag to camera
+    if (this.nameSprite && camera) {
+      this.nameSprite.quaternion.copy(camera.quaternion);
     }
   }
 }

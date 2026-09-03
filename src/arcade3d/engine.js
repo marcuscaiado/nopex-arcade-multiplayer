@@ -3,11 +3,14 @@ import { ArcadePlayer } from './player.js';
 import { buildArcadeWorld } from './world.js';
 import { ArcadeInteraction } from './interaction.js';
 import { ArcadePlayOverlay } from './play-overlay.js';
+import { ScoreTicker } from './score-ticker.js';
+import { ArcadeNetwork } from './network.js';
 
 export class Arcade3DEngine {
-  constructor(containerEl, gamesManifest) {
+  constructor(containerEl, gamesManifest, identity = null) {
     this.container = containerEl;
     this.gamesManifest = gamesManifest;
+    this.identity = identity;
 
     this.isRunning = false;
     this.isZoomingIn = false;
@@ -19,6 +22,7 @@ export class Arcade3DEngine {
     this.initPlayer();
     this.initInteraction();
     this.initOverlay();
+    this.initNetwork();
     this.initMobileControls();
     this.initTapToWalk();
 
@@ -70,7 +74,7 @@ export class Arcade3DEngine {
   }
 
   initPlayer() {
-    this.player = new ArcadePlayer(this.scene);
+    this.player = new ArcadePlayer(this.scene, this.identity);
   }
 
   initInteraction() {
@@ -84,13 +88,37 @@ export class Arcade3DEngine {
       this.isZoomingIn = false;
       this.zoomTarget = null;
       this.zoomProgress = 0;
+      if (this.network) this.network.broadcastActivity('ONLINE');
     });
+  }
+
+  initNetwork() {
+    this.scoreTicker = new ScoreTicker();
+    this.network = new ArcadeNetwork(this.scene, this.identity || { tag: 'MARC1', color: 0x00f5ff, colorHex: '#00f5ff' }, this.scoreTicker);
+    window.__ARCADE_NETWORK__ = this.network;
+  }
+
+  setPlayerIdentity(identity) {
+    this.identity = identity;
+    if (this.player) {
+      this.player.setIdentity(identity);
+    }
+    if (this.network) {
+      this.network.identity = identity;
+      if (this.network.sendId) {
+        this.network.sendId({
+          tag: identity.tag,
+          colorHex: identity.colorHex
+        });
+      }
+    }
   }
 
   launchGame(game, cabinet) {
     this.isZoomingIn = true;
     this.zoomTarget = cabinet;
     this.zoomProgress = 0;
+    if (this.network) this.network.broadcastActivity(game.title);
 
     // Smooth camera zoom towards cabinet screen before opening overlay
     setTimeout(() => {
@@ -374,11 +402,19 @@ export class Arcade3DEngine {
 
     // 2. Update Player if not currently in game overlay
     if (!this.overlay.isOpen) {
-      this.player.update(delta, this.world.roomBounds, this.world.cabinets);
+      this.player.update(delta, this.world.roomBounds, this.world.cabinets, this.camera);
       this.interaction.update(this.player);
+    } else if (this.player.nameSprite && this.camera) {
+      this.player.nameSprite.quaternion.copy(this.camera.quaternion);
     }
 
-    // 3. Camera Follow & Smooth Zoom
+    // 3. Update WebRTC Network Telemetry & Remote Players
+    if (this.network) {
+      this.network.broadcastLocalPosition(this.player.x, this.player.z, this.player.rotation, this.player.isMoving);
+      this.network.update(delta, this.camera);
+    }
+
+    // 4. Camera Follow & Smooth Zoom
     if (this.isZoomingIn && this.zoomTarget) {
       const cab = this.zoomTarget;
       const rotY = cab.rotationY;

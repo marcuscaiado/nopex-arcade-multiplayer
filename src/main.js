@@ -1,6 +1,7 @@
 import './style.css';
 import ARCADE_GAMES from './games-manifest.json';
 import { Arcade3DEngine } from './arcade3d/engine.js';
+import { IdentityManager } from './arcade3d/identity-modal.js';
 
 const GIST_RAW_URL = 'https://gist.githubusercontent.com/marcuscaiado/a238a8db5b064579413c7a54aba6c840/raw/marcus-arcade-leaderboard.json';
 
@@ -14,17 +15,58 @@ function initNopexArcade() {
   }
 
   let engine = null;
-  try {
-    engine = new Arcade3DEngine(container, ARCADE_GAMES);
-    engine.start();
-  } catch (err) {
-    console.error('Fatal WebGL / Three.js Initialization Error:', err);
-    if (errorBanner) {
-      errorBanner.style.display = 'block';
-      errorBanner.textContent = 'Erro ao inicializar 3D: ' + err.message;
+
+  // Identity Modal & Setup
+  const identityManager = new IdentityManager((identity) => {
+    if (!engine) {
+      try {
+        engine = new Arcade3DEngine(container, ARCADE_GAMES, identity);
+        engine.start();
+      } catch (err) {
+        console.error('Fatal WebGL / Three.js Initialization Error:', err);
+        if (errorBanner) {
+          errorBanner.style.display = 'block';
+          errorBanner.textContent = 'Erro ao inicializar 3D: ' + err.message;
+        }
+      }
+    } else {
+      engine.setPlayerIdentity(identity);
     }
-    return;
+  });
+
+  // TAG button in top header
+  const tagBtn = document.getElementById('arcade-tag-btn');
+  if (tagBtn) {
+    tagBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      identityManager.showModal();
+    });
   }
+
+  // Hook High Scores broadcast from local play
+  if (window.ArcadeLeaderboard && window.ArcadeLeaderboard.submitScore) {
+    const originalSubmit = window.ArcadeLeaderboard.submitScore.bind(window.ArcadeLeaderboard);
+    window.ArcadeLeaderboard.submitScore = function(gameId, score) {
+      const res = originalSubmit(gameId, score);
+      if (window.__ARCADE_NETWORK__) {
+        const game = ARCADE_GAMES.find(g => g.id === gameId);
+        const title = game ? game.title : gameId;
+        window.__ARCADE_NETWORK__.broadcastHighScore(title, score);
+      }
+      return res;
+    };
+  }
+
+  // Also listen for iframe postMessage
+  window.addEventListener('message', (e) => {
+    if (e.data && (e.data.type === 'ARCADE_SCORE' || e.data.type === 'GAME_SCORE') && e.data.score) {
+      if (window.__ARCADE_NETWORK__) {
+        const game = ARCADE_GAMES.find(g => g.id === e.data.gameId);
+        const title = (game && game.title) || e.data.gameTitle || 'Arcade Game';
+        window.__ARCADE_NETWORK__.broadcastHighScore(title, Number(e.data.score));
+      }
+    }
+  });
 
   // Teleport Select Handler
   const teleportSelect = document.getElementById('teleport-select');
