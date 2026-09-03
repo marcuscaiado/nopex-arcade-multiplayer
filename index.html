@@ -3,26 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>⚡ NOPEX ARCADE 3D ⚡ | Fliperama Virtual Walkable (25 Jogos)</title>
-    <meta name="description" content="Explore o Nopex Arcade em 3D! Ande com seu avatar pelo fliperama synthwave, escolha entre 25 máquinas de arcade (21 Originais + Street Fighter II, Super Mario, Bomberman e GTA 2) e jogue no PC ou celular." />
+    <title>🕹️ NOPEX ARCADE 3D MULTIPLAYER 🕹️ | Fliperama WebRTC P2P (Até 10 Jogadores)</title>
+    <meta name="description" content="Nopex Arcade 3D Multiplayer! Ande em tempo real com até 10 jogadores via WebRTC P2P, personalize sua TAG de 5 letras, dispute recordes mundiais ao vivo e jogue 25 máquinas clássicas." />
 
     <!-- Open Graph / Discord / WhatsApp / Telegram Previews -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://marcuscaiado.github.io/nopex-arcade/" />
-    <meta property="og:title" content="⚡ NOPEX ARCADE 3D ⚡ | Fliperama Virtual Walkable (25 Jogos)" />
-    <meta property="og:description" content="Explore o Nopex Arcade em 3D! Ande pelo fliperama synthwave, escolha entre 25 máquinas de arcade (Originais + Clássicos) e jogue no PC ou celular." />
-    <meta property="og:site_name" content="Nopex Arcade 3D" />
+    <meta property="og:url" content="https://marcuscaiado.github.io/nopex-arcade-multiplayer/" />
+    <meta property="og:title" content="🕹️ NOPEX ARCADE 3D MULTIPLAYER 🕹️ | Fliperama WebRTC P2P" />
+    <meta property="og:description" content="Ande pelo fliperama 3D em tempo real com até 10 jogadores via WebRTC P2P! Tags na cabeça, high scores sincronizados e 25 máquinas retrô." />
+    <meta property="og:site_name" content="Nopex Arcade 3D Multiplayer" />
 
     <!-- Twitter / X Previews -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://marcuscaiado.github.io/nopex-arcade/" />
-    <meta name="twitter:title" content="⚡ NOPEX ARCADE 3D ⚡ | Fliperama Virtual Walkable (25 Jogos)" />
-    <meta name="twitter:description" content="Explore o Nopex Arcade em 3D! Ande pelo fliperama synthwave, escolha entre 25 máquinas de arcade (Originais + Clássicos) e jogue no PC ou celular." />
+    <meta name="twitter:url" content="https://marcuscaiado.github.io/nopex-arcade-multiplayer/" />
+    <meta name="twitter:title" content="🕹️ NOPEX ARCADE 3D MULTIPLAYER 🕹️ | Fliperama WebRTC P2P" />
+    <meta name="twitter:description" content="Ande pelo fliperama 3D em tempo real com até 10 jogadores via WebRTC P2P! Tags na cabeça, high scores sincronizados e 25 máquinas retrô." />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet">
     <script src="arcade-leaderboard.js"></script>
     <script src="arcade-difficulty.js"></script>
+    <script type="module" crossorigin src="./assets/index-DujoJzFh.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-tN9AHlif.css">
   </head>
   <body>
     <!-- Fullscreen 3D Viewport -->
@@ -85,6 +87,9 @@
               </optgroup>
             </select>
           </div>
+          <button id="arcade-tag-btn" class="hud-btn-2d" title="Alterar sua Tag ou Traje">
+            🏷️ TAG
+          </button>
           <a href="https://marcuscaiado.github.io/marcus-arcade/" target="_blank" rel="noopener noreferrer" class="hud-btn-2d" title="Abrir catálogo 2D clássico">
             📋 GRID 2D
           </a>
@@ -161,7 +166,6 @@
         <iframe id="arcade-game-iframe" src="about:blank" allow="autoplay; fullscreen; encrypted-media"></iframe>
       </div>
     </div>
-
-    <script type="module" src="./src/main.js"></script>
+
   </body>
 </html>
