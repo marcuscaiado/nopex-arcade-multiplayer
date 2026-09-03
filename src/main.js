@@ -1,0 +1,103 @@
+import './style.css';
+import ARCADE_GAMES from './games-manifest.json';
+import { Arcade3DEngine } from './arcade3d/engine.js';
+
+const GIST_RAW_URL = 'https://gist.githubusercontent.com/marcuscaiado/a238a8db5b064579413c7a54aba6c840/raw/marcus-arcade-leaderboard.json';
+
+function initNopexArcade() {
+  const container = document.getElementById('arcade-3d-canvas-container');
+  const errorBanner = document.getElementById('webgl-error');
+
+  if (!container) {
+    console.error('Missing #arcade-3d-canvas-container');
+    return;
+  }
+
+  let engine = null;
+  try {
+    engine = new Arcade3DEngine(container, ARCADE_GAMES);
+    engine.start();
+  } catch (err) {
+    console.error('Fatal WebGL / Three.js Initialization Error:', err);
+    if (errorBanner) {
+      errorBanner.style.display = 'block';
+      errorBanner.textContent = 'Erro ao inicializar 3D: ' + err.message;
+    }
+    return;
+  }
+
+  // Teleport Select Handler
+  const teleportSelect = document.getElementById('teleport-select');
+  if (teleportSelect) {
+    teleportSelect.addEventListener('change', (e) => {
+      const gameId = e.target.value;
+      if (gameId && engine) {
+        import('./arcade3d/audio.js').then(m => m.playDopamineChime());
+        engine.teleportToCabinet(gameId);
+        teleportSelect.blur();
+      }
+    });
+  }
+
+  // Mobile Control Mode Switcher (Joystick <-> D-Pad)
+  const ctrlToggle = document.getElementById('arcade-ctrl-toggle');
+  const joystickEl = document.getElementById('arcade-joystick');
+  const dpadEl = document.getElementById('arcade-dpad');
+  let currentMode = 'joystick';
+
+  if (ctrlToggle && joystickEl && dpadEl) {
+    ctrlToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (currentMode === 'joystick') {
+        currentMode = 'dpad';
+        joystickEl.style.display = 'none';
+        dpadEl.style.display = 'flex';
+        ctrlToggle.innerHTML = '<span>🕹️ JOYSTICK</span>';
+      } else {
+        currentMode = 'joystick';
+        joystickEl.style.display = 'block';
+        dpadEl.style.display = 'none';
+        ctrlToggle.innerHTML = '<span>🎮 D-PAD</span>';
+      }
+    });
+  }
+
+  // Fetch Live Global Leaderboards for Hologram HUD Cards
+  async function syncWorldRecords() {
+    window.__ARCADE_LEADERBOARDS__ = window.__ARCADE_LEADERBOARDS__ || {};
+    try {
+      const res = await fetch(`${GIST_RAW_URL}?_t=${Date.now()}`);
+      if (res.ok) {
+        const cloudData = await res.json();
+        ARCADE_GAMES.forEach(game => {
+          let localScores = [];
+          try {
+            localScores = JSON.parse(localStorage.getItem(`arcade_lb_${game.id}`) || '[]');
+          } catch(e) {}
+          const cloudScores = cloudData[game.id] || [];
+          const allScores = [...cloudScores, ...localScores].filter(s => s && s.name && s.score);
+          allScores.sort((a, b) => b.score - a.score);
+
+          const champ = allScores[0];
+          if (champ) {
+            window.__ARCADE_LEADERBOARDS__[game.id] = {
+              topScore: champ.score,
+              topPilot: (String(champ.name).replace(/[^a-zA-Z0-9]/g, '').toUpperCase().substring(0, 3) || 'MRC')
+            };
+          }
+        });
+      }
+    } catch(e) {
+      console.warn('Could not sync cloud records:', e);
+    }
+  }
+
+  syncWorldRecords();
+}
+
+// Bulletproof execution regardless of script load timing
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initNopexArcade);
+} else {
+  initNopexArcade();
+}

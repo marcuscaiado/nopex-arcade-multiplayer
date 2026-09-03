@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>⚡ NOPEX ARCADE 3D ⚡ | Fliperama Virtual Walkable (25 Jogos)</title>
+    <meta name="description" content="Explore o Nopex Arcade em 3D! Ande com seu avatar pelo fliperama synthwave, escolha entre 25 máquinas de arcade (21 Originais + Street Fighter II, Super Mario, Bomberman e GTA 2) e jogue no PC ou celular." />
+
+    <!-- Open Graph / Discord / WhatsApp / Telegram Previews -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://marcuscaiado.github.io/nopex-arcade/" />
+    <meta property="og:title" content="⚡ NOPEX ARCADE 3D ⚡ | Fliperama Virtual Walkable (25 Jogos)" />
+    <meta property="og:description" content="Explore o Nopex Arcade em 3D! Ande pelo fliperama synthwave, escolha entre 25 máquinas de arcade (Originais + Clássicos) e jogue no PC ou celular." />
+    <meta property="og:site_name" content="Nopex Arcade 3D" />
+
+    <!-- Twitter / X Previews -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://marcuscaiado.github.io/nopex-arcade/" />
+    <meta name="twitter:title" content="⚡ NOPEX ARCADE 3D ⚡ | Fliperama Virtual Walkable (25 Jogos)" />
+    <meta name="twitter:description" content="Explore o Nopex Arcade em 3D! Ande pelo fliperama synthwave, escolha entre 25 máquinas de arcade (Originais + Clássicos) e jogue no PC ou celular." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="arcade-leaderboard.js"></script>
+    <script src="arcade-difficulty.js"></script>
+  </head>
+  <body>
+    <!-- Fullscreen 3D Viewport -->
+    <div id="nopex-viewport">
+      <div id="arcade-3d-canvas-container"></div>
+
+      <!-- Top Cyberpunk Floating Header & Teleport HUD -->
+      <header class="nopex-hud-header">
+        <div class="hud-left">
+          <h1 class="nopex-logo">⚡ NOPEX ARCADE</h1>
+          <span class="hud-tag">3D VIRTUAL HUB</span>
+        </div>
+
+        <div class="hud-center">
+          <div class="hud-instructions">
+            <span class="inst-key">⌨️ WASD</span>
+            <span class="inst-text">para Andar</span>
+            <span class="inst-sep">•</span>
+            <span class="inst-key">[ESPAÇO]</span>
+            <span class="inst-text">Jogar Máquina</span>
+          </div>
+        </div>
+
+        <div class="hud-right">
+          <div class="teleport-dropdown-wrap">
+            <select id="teleport-select" class="teleport-select" title="Teletransportar para máquina">
+              <option value="">🚀 Teleporte Rápido...</option>
+              <optgroup label="🌟 Megahits em Destaque">
+                <option value="neon-tetris-3d">🧱 Neon Cyber Tetris 3D</option>
+                <option value="geometricsurvivor">⚔️ Geometric Survivor 3D</option>
+                <option value="neon-viper">🐍 Neon Viper 3D</option>
+                <option value="cute-mini-golf">⛳ Cute Mini Golf 3D</option>
+              </optgroup>
+              <optgroup label="⚔️ Ação & Combate">
+                <option value="neon-katana-slash">🍉 Neon Katana Slash (Fruit Ninja)</option>
+                <option value="stickman-fps-arcade">🔫 Stickman FPS Arcade</option>
+                <option value="sky-ace-1944">🛩️ Sky Ace 1944</option>
+                <option value="asteroid-blitz">🛸 Asteroid Blitz</option>
+                <option value="street-fighter-2">🥊 Street Fighter II Turbo</option>
+                <option value="gta-2">🚗 Grand Theft Auto 2</option>
+                <option value="cyber-shuriken">🎯 Cyber Shuriken Neo</option>
+              </optgroup>
+              <optgroup label="🎱 Esportes & Física">
+                <option value="kawaii-8ball-pool">🎱 Kawaii 8-Ball Pool</option>
+                <option value="neon-pachinko-pop">🔮 Neon Pachinko Pop</option>
+                <option value="neon-archery-master">🎯 Neon Archery Master</option>
+                <option value="brick-breaker-fx">🧱 Brick Breaker FX</option>
+                <option value="neon-drop-2048">🧩 Neon Drop 2048</option>
+              </optgroup>
+              <optgroup label="🕹️ Retro & Zen">
+                <option value="super-mario">🍄 Super Mario World</option>
+                <option value="super-bomberman">💣 Super Bomberman</option>
+                <option value="cyber-pong-3d">🏓 Kawaii Table Tennis 3D</option>
+                <option value="neon-drift-racer">🏎️ Neon Drift Racer</option>
+                <option value="cyber-runner-3d">🏃 Cyber Runner 3D</option>
+                <option value="neon-stack-3d">🌌 Neon Stack Harmony 3D</option>
+                <option value="neon-orbit-drift">🛸 Neon Orbit Drift</option>
+                <option value="cyber-pinball-fx">⚡ Cyber Pinball FX</option>
+                <option value="flappy-cyber-droid">🐦 Flappy Cyber Droid</option>
+              </optgroup>
+            </select>
+          </div>
+          <a href="https://marcuscaiado.github.io/marcus-arcade/" target="_blank" rel="noopener noreferrer" class="hud-btn-2d" title="Abrir catálogo 2D clássico">
+            📋 GRID 2D
+          </a>
+        </div>
+      </header>
+
+      <!-- Floating Hologram Card HUD when near an arcade cabinet -->
+      <div id="arcade-3d-prompt" class="arcade-hologram-card">
+        <div class="hologram-header">
+          <h2 id="arcade-prompt-title">🎮 JOGO</h2>
+          <span class="hologram-badge">CABINET READY</span>
+        </div>
+        <p id="arcade-prompt-desc">Aproxime-se da máquina para jogar.</p>
+        <div id="arcade-prompt-record" class="hologram-record">🏆 Recorde Mundial: Carregando...</div>
+        <div class="hologram-action">
+          <button class="hologram-play-btn" id="arcade-hologram-play-btn">
+            <span>PRESSIONE [ESPAÇO] PARA JOGAR</span> ➔
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Virtual Joystick with Direction Arrows -->
+      <div id="arcade-joystick" class="arcade-mobile-joystick">
+        <div class="joystick-arrow arrow-up">▲</div>
+        <div class="joystick-arrow arrow-down">▼</div>
+        <div class="joystick-arrow arrow-left">◀</div>
+        <div class="joystick-arrow arrow-right">▶</div>
+        <div id="joystick-thumb" class="joystick-thumb"></div>
+      </div>
+
+      <!-- Mobile On-Screen D-Pad (Alternative discrete directional control) -->
+      <div id="arcade-dpad" class="arcade-mobile-dpad">
+        <button id="dpad-up" class="dpad-btn dpad-up" aria-label="Mover para Cima">▲</button>
+        <div class="dpad-middle-row">
+          <button id="dpad-left" class="dpad-btn dpad-left" aria-label="Mover para Esquerda">◀</button>
+          <div class="dpad-center-hub">🕹️</div>
+          <button id="dpad-right" class="dpad-btn dpad-right" aria-label="Mover para Direita">▶</button>
+        </div>
+        <button id="dpad-down" class="dpad-btn dpad-down" aria-label="Mover para Baixo">▼</button>
+      </div>
+
+      <!-- Mobile Touch Controls Toggle (Switch between Joystick and D-Pad) -->
+      <button id="arcade-ctrl-toggle" class="control-mode-toggle" title="Alternar Modo de Controle">
+        <span>🎮 D-PAD</span>
+      </button>
+
+      <!-- Mobile Tap-to-Walk Floating Hint -->
+      <div class="mobile-controls-hint">
+        ⚡ Toque no chão ou na máquina para andar • Arraste o joystick
+      </div>
+
+      <!-- Mobile Action Play Button -->
+      <button id="arcade-action-btn" class="arcade-mobile-action-btn">
+        <span>JOGAR</span> 🕹️
+      </button>
+
+      <!-- WebGL Diagnostics Banner (hidden unless error) -->
+      <div id="webgl-error" class="webgl-error-banner" style="display: none;">
+        ⚠️ Não foi possível iniciar a aceleração WebGL. Verifique se a aceleração por hardware está habilitada nas configurações do seu navegador.
+      </div>
+    </div>
+
+    <!-- Arcade Game Playing Overlay (CRT Cabinet Zoom-in Frame) -->
+    <div id="arcade-game-overlay" class="arcade-game-overlay" style="display: none;">
+      <div class="arcade-overlay-bar">
+        <button id="arcade-overlay-back" class="overlay-back-btn">⬅️ VOLTAR AO FLIPERAMA (ESC)</button>
+        <div id="arcade-overlay-title" class="overlay-game-title">🎮 JOGO</div>
+        <div class="overlay-actions">
+          <button id="arcade-overlay-reload" class="overlay-icon-btn" title="Reiniciar Jogo">🔄</button>
+          <button id="arcade-overlay-fullscreen" class="overlay-icon-btn" title="Tela Cheia">🔲</button>
+        </div>
+      </div>
+      <div class="arcade-iframe-container">
+        <iframe id="arcade-game-iframe" src="about:blank" allow="autoplay; fullscreen; encrypted-media"></iframe>
+      </div>
+    </div>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
