@@ -75,29 +75,26 @@ export class ArcadeNetwork {
 
       this.room = joinRoom(config, roomId);
 
-      // 1. Actions setup
-      const [sendPos, onPos] = this.room.makeAction('pos');
-      const [sendId, onId] = this.room.makeAction('id');
-      const [sendAct, onAct] = this.room.makeAction('act');
-      const [sendScore, onScore] = this.room.makeAction('score');
-
-      this.sendPos = sendPos;
-      this.sendId = sendId;
-      this.sendAct = sendAct;
-      this.sendScore = sendScore;
+      // 1. Actions setup (Trystero 0.25 returns action objects)
+      this.posAction = this.room.makeAction('pos');
+      this.idAction = this.room.makeAction('id');
+      this.actAction = this.room.makeAction('act');
+      this.scoreAction = this.room.makeAction('score');
 
       // 2. Peer Handshakes
-      this.room.onPeerJoin(peerId => {
+      this.room.onPeerJoin = (peerId) => {
         console.log(`[WebRTC] Peer connected: ${peerId}`);
         // Send our identity to the new peer
-        this.sendId({
-          tag: this.identity.tag,
-          colorHex: this.identity.colorHex
-        }, peerId);
+        if (this.idAction) {
+          this.idAction.send({
+            tag: this.identity.tag,
+            colorHex: this.identity.colorHex
+          }, { target: peerId });
+        }
         this.updateHudCount();
-      });
+      };
 
-      this.room.onPeerLeave(peerId => {
+      this.room.onPeerLeave = (peerId) => {
         console.log(`[WebRTC] Peer disconnected: ${peerId}`);
         const remote = this.peers.get(peerId);
         if (remote) {
@@ -105,10 +102,10 @@ export class ArcadeNetwork {
           this.peers.delete(peerId);
         }
         this.updateHudCount();
-      });
+      };
 
       // 3. Receive Peer Identity
-      onId((data, peerId) => {
+      this.idAction.onMessage = (data, { peerId }) => {
         if (!data || !data.tag) return;
         if (this.peers.has(peerId)) {
           const remote = this.peers.get(peerId);
@@ -116,48 +113,56 @@ export class ArcadeNetwork {
           remote.colorHex = data.colorHex || '#00f5ff';
           remote.renderNameTagCanvas();
         } else {
-          // Limit to 10 peers max
+          // Limit to 10 peers max (9 remotes + local player)
           if (this.peers.size >= 9) return;
           const remote = new RemoteArcadePlayer(this.scene, peerId, data.tag, data.colorHex);
           this.peers.set(peerId, remote);
           this.updateHudCount();
         }
-      });
+      };
 
       // 4. Receive Position Telemetry
-      onPos((data, peerId) => {
+      this.posAction.onMessage = (data, { peerId }) => {
         if (!data) return;
         const remote = this.peers.get(peerId);
         if (remote) {
           remote.setTelemetry(data.x, data.z, data.r, data.m);
         }
-      });
+      };
 
       // 5. Receive Activity (Cabinet occupancy)
-      onAct((data, peerId) => {
+      this.actAction.onMessage = (data, { peerId }) => {
         if (!data) return;
         const remote = this.peers.get(peerId);
         if (remote) {
           remote.setActivity(data.status || 'ONLINE');
         }
-      });
+      };
 
       // 6. Receive High Score Broadcast
-      onScore(data => {
+      this.scoreAction.onMessage = (data) => {
         if (!data) return;
         if (this.scoreTicker) {
           this.scoreTicker.showRecord(data.player, data.game, data.score);
         }
-      });
+      };
 
     } catch (err) {
       console.warn('[WebRTC] Connection failed, operating in offline hub mode:', err);
     }
   }
 
+  broadcastIdentity() {
+    if (!this.idAction) return;
+    this.idAction.send({
+      tag: this.identity.tag,
+      colorHex: this.identity.colorHex
+    });
+  }
+
   broadcastLocalPosition(x, z, rotY, isMoving) {
-    if (!this.sendPos) return;
-    this.sendPos({
+    if (!this.posAction) return;
+    this.posAction.send({
       x: Math.round(x * 100) / 100,
       z: Math.round(z * 100) / 100,
       r: Math.round(rotY * 100) / 100,
@@ -166,13 +171,13 @@ export class ArcadeNetwork {
   }
 
   broadcastActivity(statusText) {
-    if (!this.sendAct) return;
-    this.sendAct({ status: statusText });
+    if (!this.actAction) return;
+    this.actAction.send({ status: statusText });
   }
 
   broadcastHighScore(gameTitle, score) {
-    if (!this.sendScore) return;
-    this.sendScore({
+    if (!this.scoreAction) return;
+    this.scoreAction.send({
       player: this.identity.tag,
       game: gameTitle,
       score: score,

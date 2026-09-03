@@ -105,12 +105,7 @@ export class Arcade3DEngine {
     }
     if (this.network) {
       this.network.identity = identity;
-      if (this.network.sendId) {
-        this.network.sendId({
-          tag: identity.tag,
-          colorHex: identity.colorHex
-        });
-      }
+      this.network.broadcastIdentity();
     }
   }
 
