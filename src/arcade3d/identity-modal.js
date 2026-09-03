@@ -116,6 +116,8 @@ export class IdentityManager {
         </div>
       </div>
 
+      <div id="mp-modal-err" style="color: #ff3838; font-size: 11px; margin-bottom: 10px; display: none; font-weight: 700;"></div>
+
       <button id="mp-enter-btn" style="
         width: 100%;
         background: linear-gradient(135deg, #00f5ff, #0070ec);
@@ -156,14 +158,19 @@ export class IdentityManager {
       });
     });
 
+    const errEl = box.querySelector('#mp-modal-err');
     const enterBtn = box.querySelector('#mp-enter-btn');
     enterBtn.addEventListener('click', () => {
       const val = tagInput.value.trim().toUpperCase();
       if (!val || val.length < 2) {
-        alert('Por favor, digite uma TAG de 2 a 5 letras!');
+        if (errEl) {
+          errEl.textContent = '⚠️ Digite uma TAG com pelo menos 2 letras!';
+          errEl.style.display = 'block';
+        }
         tagInput.focus();
         return;
       }
+      if (errEl) errEl.style.display = 'none';
       this.tag = val;
       localStorage.setItem('ARCADE_MP_TAG', this.tag);
       localStorage.setItem('ARCADE_MP_COLOR', this.colorHex);
