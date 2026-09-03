@@ -22,6 +22,7 @@ function initNopexArcade() {
       try {
         engine = new Arcade3DEngine(container, ARCADE_GAMES, identity);
         engine.start();
+        window.__ARCADE_ENGINE__ = engine;
       } catch (err) {
         console.error('Fatal WebGL / Three.js Initialization Error:', err);
         if (errorBanner) {
