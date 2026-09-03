@@ -70,7 +70,15 @@ export class ArcadeNetwork {
 
   connect() {
     try {
-      const config = { appId: 'nopex-arcade-webrtc-v1' };
+      const config = {
+        appId: 'nopex-arcade-webrtc-v1',
+        relayUrls: [
+          'wss://nos.lol',
+          'wss://relay.damus.io',
+          'wss://relay.primal.net',
+          'wss://purplerelay.com'
+        ]
+      };
       const roomId = 'nopex-main-hub';
 
       this.room = joinRoom(config, roomId);
