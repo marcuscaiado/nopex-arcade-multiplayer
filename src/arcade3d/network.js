@@ -17,6 +17,13 @@ export class ArcadeNetwork {
     this.chatAction = null;
     this.onCabinetOccupancyChange = null;
 
+    // Watch Party & MediaStream properties
+    this.activeLocalStream = null;
+    this.activeStreamingGameId = null;
+    this.activeRemoteStreams = new Map(); // gameId -> { peerId, pilotTag, stream }
+    this.onRemoteGameStream = null; // (gameId, pilotTag, stream, peerId) => void
+    this.onRemoteGameStreamEnded = null; // (gameId, peerId) => void
+
     // Rate limiting & dead reckoning telemetry variables
     this.lastBroadcastTime = 0;
     this.lastSentX = null;
@@ -100,14 +107,33 @@ export class ArcadeNetwork {
 
       this.room = joinRoom(config, roomId);
 
-      // 1. Actions setup (Trystero 0.25 returns action objects)
-      this.posAction = this.room.makeAction('pos');
-      this.idAction = this.room.makeAction('id');
-      this.actAction = this.room.makeAction('act');
-      this.scoreAction = this.room.makeAction('score');
-      this.chatAction = this.room.makeAction('chat');
+      const wrapAction = (act) => {
+        if (!act) return null;
+        if (!Array.isArray(act)) return act;
+        const [sendFn, getFn] = act;
+        return {
+          send(data, opts) {
+            const target = opts?.target || null;
+            return sendFn(data, target);
+          },
+          set onMessage(handler) {
+            if (typeof getFn === 'function') {
+              getFn((data, peerId) => {
+                handler(data, { peerId });
+              });
+            }
+          }
+        };
+      };
 
-      // 2. Peer Handshakes
+      // 1. Actions setup (Trystero returns [send, get] tuples, adapt to unified { send, onMessage })
+      this.posAction = wrapAction(this.room.makeAction('pos'));
+      this.idAction = wrapAction(this.room.makeAction('id'));
+      this.actAction = wrapAction(this.room.makeAction('act'));
+      this.scoreAction = wrapAction(this.room.makeAction('score'));
+      this.chatAction = wrapAction(this.room.makeAction('chat'));
+
+      // 2. Peer Handshakes & Media Streams
       this.room.onPeerJoin = (peerId) => {
         console.log(`[WebRTC] Peer connected: ${peerId}`);
         // Send our identity directly to the newly connected peer
@@ -116,6 +142,18 @@ export class ArcadeNetwork {
             tag: this.identity.tag,
             colorHex: this.identity.colorHex
           }, { target: peerId });
+        }
+        // If we are currently streaming gameplay, add this peer to our stream!
+        if (this.activeLocalStream && this.room.addStream) {
+          try {
+            this.room.addStream(this.activeLocalStream, peerId, {
+              type: 'GAMEPLAY',
+              gameId: this.activeStreamingGameId,
+              pilotTag: this.identity ? this.identity.tag : 'P1'
+            });
+          } catch (err) {
+            console.warn('[Watch Party] addStream error on peer join:', err);
+          }
         }
         this.updateHudCount();
       };
@@ -127,10 +165,46 @@ export class ArcadeNetwork {
           remote.dispose();
           this.peers.delete(peerId);
         }
+
+        // Clean up any active stream from this disconnected peer
+        for (const [gameId, streamData] of this.activeRemoteStreams.entries()) {
+          if (streamData.peerId === peerId) {
+            this.activeRemoteStreams.delete(gameId);
+            if (this.onRemoteGameStreamEnded) {
+              this.onRemoteGameStreamEnded(gameId, peerId);
+            }
+          }
+        }
+
         if (this.onCabinetOccupancyChange) {
           this.onCabinetOccupancyChange(peerId, null, null, false);
         }
         this.updateHudCount();
+      };
+
+      // 2b. Handle incoming Watch Party MediaStreams
+      this.room.onPeerStream = (stream, peerId, metadata) => {
+        console.log(`[Watch Party] Received remote stream from peer ${peerId}:`, metadata);
+        const gameId = metadata?.gameId;
+        const tag = metadata?.pilotTag || (this.peers.get(peerId)?.tag) || 'PILOTO';
+        if (gameId && stream) {
+          this.activeRemoteStreams.set(gameId, { peerId, pilotTag: tag, stream });
+          if (this.onRemoteGameStream) {
+            this.onRemoteGameStream(gameId, tag, stream, peerId);
+          }
+        }
+      };
+
+      this.room.onPeerTrack = (track, stream, peerId, metadata) => {
+        console.log(`[Watch Party] Received remote track from peer ${peerId}:`, track.kind, metadata);
+        const gameId = metadata?.gameId;
+        const tag = metadata?.pilotTag || (this.peers.get(peerId)?.tag) || 'PILOTO';
+        if (gameId && stream) {
+          this.activeRemoteStreams.set(gameId, { peerId, pilotTag: tag, stream });
+          if (this.onRemoteGameStream) {
+            this.onRemoteGameStream(gameId, tag, stream, peerId);
+          }
+        }
       };
 
       // 3. Receive Peer Identity (Bidirectional Handshake & Dynamic Recovery)
@@ -178,7 +252,7 @@ export class ArcadeNetwork {
         }
       };
 
-      // 5. Receive Activity (Cabinet occupancy)
+      // 5. Receive Activity (Cabinet occupancy & stream notification)
       this.actAction.onMessage = (data, { peerId }) => {
         if (!data) return;
         const remote = this.peers.get(peerId);
@@ -187,7 +261,15 @@ export class ArcadeNetwork {
         }
         if (this.onCabinetOccupancyChange) {
           const tag = (remote && remote.tag) || data.tag || 'P2';
-          this.onCabinetOccupancyChange(peerId, tag, data.gameId, !!data.playing);
+          this.onCabinetOccupancyChange(peerId, tag, data.gameId, !!data.playing, !!data.isLiveStream);
+        }
+        if (!data.playing && data.gameId) {
+          if (this.activeRemoteStreams.has(data.gameId)) {
+            this.activeRemoteStreams.delete(data.gameId);
+            if (this.onRemoteGameStreamEnded) {
+              this.onRemoteGameStreamEnded(data.gameId, peerId);
+            }
+          }
         }
       };
 
@@ -285,6 +367,62 @@ export class ArcadeNetwork {
       playing: !!isPlaying,
       tag: this.identity ? this.identity.tag : 'P1'
     });
+  }
+
+  startBroadcastingGame(stream, gameId) {
+    if (!stream) return;
+    this.activeLocalStream = stream;
+    this.activeStreamingGameId = gameId;
+
+    const tag = this.identity ? this.identity.tag : 'PILOTO';
+
+    // Broadcast stream to all connected peers if room supports WebRTC streaming
+    if (this.room && typeof this.room.addStream === 'function') {
+      try {
+        this.room.addStream(stream, null, {
+          type: 'GAMEPLAY',
+          gameId: gameId,
+          pilotTag: tag
+        });
+      } catch (err) {
+        console.warn('[Watch Party] room.addStream error:', err);
+      }
+    }
+
+    // Also broadcast activity with isLiveStream flag
+    if (this.actAction) {
+      this.actAction.send({
+        status: 'PLAYING',
+        gameId: gameId,
+        playing: true,
+        tag: tag,
+        isLiveStream: true
+      });
+    }
+  }
+
+  stopBroadcastingGame() {
+    const gameId = this.activeStreamingGameId;
+    if (this.activeLocalStream && this.room && typeof this.room.removeStream === 'function') {
+      try {
+        this.room.removeStream(this.activeLocalStream);
+      } catch (err) {
+        console.warn('[Watch Party] room.removeStream error:', err);
+      }
+    }
+
+    this.activeLocalStream = null;
+    this.activeStreamingGameId = null;
+
+    if (this.actAction && gameId) {
+      this.actAction.send({
+        status: 'ONLINE',
+        gameId: gameId,
+        playing: false,
+        tag: this.identity ? this.identity.tag : 'PILOTO',
+        isLiveStream: false
+      });
+    }
   }
 
   broadcastChat(text) {

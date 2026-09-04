@@ -8,6 +8,7 @@ import { ArcadeNetwork } from './network.js';
 import { musicManager } from './music-manager.js';
 import { ArcadeJukeboxModal } from './jukebox-modal.js';
 import { ArcadeMusicHud } from './music-hud.js';
+import { ArcadeWatchHud } from './watch-hud.js';
 
 export class Arcade3DEngine {
   constructor(containerEl, gamesManifest, identity = null) {
@@ -20,12 +21,17 @@ export class Arcade3DEngine {
     this.zoomTarget = null;
     this.zoomProgress = 0;
 
+    this.isSpectating = false;
+    this.spectateTarget = null;
+    this.watchHud = null;
+
     this.initScene();
     this.initWorld();
     this.initPlayer();
     this.initTokens();
     this.initInteraction();
     this.initOverlay();
+    this.initWatchHud();
     this.initJukebox();
     this.initNetwork();
     this.initPointerLock();
@@ -127,7 +133,8 @@ export class Arcade3DEngine {
     this.interaction = new ArcadeInteraction(
       this.world.cabinets,
       (game, cabinet) => this.launchGame(game, cabinet),
-      (cabId) => this.awardExplorationToken(cabId)
+      (cabId) => this.awardExplorationToken(cabId),
+      (cabinet) => this.startSpectatingCabinet(cabinet)
     );
   }
 
@@ -145,6 +152,89 @@ export class Arcade3DEngine {
         this.network.broadcastPlayingGame(null, false);
       }
     });
+
+    // Wire live stream broadcast when player canvas is captured
+    this.overlay.onStreamReady = (stream, gameId) => {
+      console.log(`[Watch Party] Broadcasting local gameplay stream for ${gameId}`);
+      if (this.network) {
+        this.network.startBroadcastingGame(stream, gameId);
+      }
+      const localCab = this.world.cabinets.find(c => c.game.id === gameId);
+      if (localCab) {
+        localCab.setLiveStream(stream, this.identity ? this.identity.tag : 'VOCÊ');
+      }
+    };
+
+    this.overlay.onStreamEnded = (gameId) => {
+      console.log(`[Watch Party] Ending local stream for ${gameId}`);
+      if (this.network) {
+        this.network.stopBroadcastingGame();
+      }
+      const localCab = this.world.cabinets.find(c => c.game.id === gameId);
+      if (localCab) {
+        localCab.clearLiveStream();
+      }
+    };
+  }
+
+  initWatchHud() {
+    this.watchHud = new ArcadeWatchHud({
+      onExit: () => this.stopSpectating(),
+      onCheer: (cheerText) => {
+        const myTag = this.identity?.tag || 'VOCÊ';
+        const myColor = this.identity?.colorHex || '#00f5ff';
+        this.player.showSpeechBubble(cheerText);
+        if (this.network) {
+          this.network.broadcastChat(cheerText);
+        }
+        this.appendChatMessage(myTag, cheerText, myColor, true);
+      }
+    });
+
+    // Escape and V keys to exit spectator camarote mode
+    window.addEventListener('keydown', (e) => {
+      if (!this.isSpectating) return;
+      if (e.code === 'Escape' || e.code === 'KeyV') {
+        e.preventDefault();
+        this.stopSpectating();
+      }
+    });
+  }
+
+  startSpectatingCabinet(cabinet) {
+    if (!cabinet) return;
+    if (this.overlay && this.overlay.isOpen) return;
+
+    if (document.pointerLockElement) {
+      document.exitPointerLock?.();
+    }
+
+    this.isSpectating = true;
+    this.spectateTarget = cabinet;
+    window.__arcadeSpectating = true;
+
+    if (this.interaction) {
+      if (this.interaction.promptEl) this.interaction.promptEl.classList.remove('visible');
+      if (this.interaction.actionBtn) this.interaction.actionBtn.classList.remove('visible');
+    }
+
+    import('./audio.js').then(m => m.playDopamineChime?.());
+
+    if (this.watchHud) {
+      this.watchHud.show(cabinet, 1);
+    }
+  }
+
+  stopSpectating() {
+    if (!this.isSpectating) return;
+    this.isSpectating = false;
+    this.spectateTarget = null;
+    window.__arcadeSpectating = false;
+    this.clock.getDelta(); // Reset camera delta
+
+    if (this.watchHud) {
+      this.watchHud.hide();
+    }
   }
 
   initJukebox() {
@@ -168,14 +258,46 @@ export class Arcade3DEngine {
     this.network = new ArcadeNetwork(this.scene, this.identity || { tag: 'MARC1', color: 0x00f5ff, colorHex: '#00f5ff' }, this.scoreTicker);
     window.__ARCADE_NETWORK__ = this.network;
 
-    this.network.onCabinetOccupancyChange = (peerId, tag, gameId, isPlaying) => {
+    this.network.onCabinetOccupancyChange = (peerId, tag, gameId, isPlaying, isLiveStream) => {
       if (isPlaying && gameId) {
         const cab = this.world.cabinets.find(c => c.game.id === gameId);
-        if (cab) cab.setOccupiedBy(tag);
+        if (cab) {
+          cab.setOccupiedBy(tag);
+          if (isLiveStream) {
+            cab.occupancyBadge.setPlayer(tag, true);
+          }
+        }
       } else {
         this.world.cabinets.forEach(cab => {
-          if (cab.occupiedBy === tag) cab.clearOccupied();
+          if (cab.occupiedBy === tag) {
+            cab.clearOccupied();
+            if (this.isSpectating && this.spectateTarget === cab) {
+              this.stopSpectating();
+            }
+          }
         });
+      }
+    };
+
+    this.network.onRemoteGameStream = (gameId, pilotTag, stream, peerId) => {
+      console.log(`[Watch Party] Applying remote video stream for ${gameId} from ${pilotTag}`);
+      const cab = this.world.cabinets.find(c => c.game.id === gameId);
+      if (cab) {
+        cab.setLiveStream(stream, pilotTag);
+        if (this.isSpectating && this.spectateTarget === cab && this.watchHud) {
+          this.watchHud.show(cab, 1);
+        }
+      }
+    };
+
+    this.network.onRemoteGameStreamEnded = (gameId, peerId) => {
+      console.log(`[Watch Party] Remote stream ended for ${gameId}`);
+      const cab = this.world.cabinets.find(c => c.game.id === gameId);
+      if (cab) {
+        cab.clearLiveStream();
+      }
+      if (this.isSpectating && this.spectateTarget === cab) {
+        this.stopSpectating();
       }
     };
   }
@@ -671,8 +793,36 @@ export class Arcade3DEngine {
       this.network.update(delta, this.camera);
     }
 
-    // 4. Camera Follow & Smooth Zoom
-    if (this.isZoomingIn && this.zoomTarget) {
+    // 4. Camera Follow, Cinematic Spectator Over-the-Shoulder, or Smooth Zoom
+    if (this.isSpectating && this.spectateTarget) {
+      const cab = this.spectateTarget;
+      const rotY = cab.rotationY;
+
+      // Exact Screen Center in world space
+      const screenCenterX = cab.position.x + Math.sin(rotY) * 0.51;
+      const screenCenterY = 2.15;
+      const screenCenterZ = cab.position.z + Math.cos(rotY) * 0.51;
+      const screenCenter = new THREE.Vector3(screenCenterX, screenCenterY, screenCenterZ);
+
+      // Forward and lateral right vectors
+      const fwdX = Math.sin(rotY);
+      const fwdZ = Math.cos(rotY);
+      const rightX = Math.cos(rotY);
+      const rightZ = -Math.sin(rotY);
+
+      // Cinematic over-the-shoulder camera position framing the CRT screen:
+      // ~2.15m distance from cabinet along forward line
+      // ~2.05m eye level height with organic subtle breathing
+      // ~0.38m lateral right offset framing the cabinet
+      const targetCamPos = new THREE.Vector3(
+        cab.position.x + fwdX * 2.15 + rightX * 0.38,
+        2.05 + Math.sin(time * 1.8) * 0.012,
+        cab.position.z + fwdZ * 2.15 + rightZ * 0.38
+      );
+
+      this.camera.position.lerp(targetCamPos, 0.12);
+      this.camera.lookAt(screenCenter);
+    } else if (this.isZoomingIn && this.zoomTarget) {
       const cab = this.zoomTarget;
       const rotY = cab.rotationY;
 

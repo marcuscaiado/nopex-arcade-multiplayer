@@ -13,6 +13,10 @@ export class ArcadePlayOverlay {
 
     this.isOpen = false;
     this.activeGame = null;
+    this.currentStream = null;
+    this._streamPollTimer = null;
+    this.onStreamReady = null; // (stream, gameId) => void
+    this.onStreamEnded = null; // (gameId) => void
 
     this.bindEvents();
   }
@@ -131,6 +135,9 @@ export class ArcadePlayOverlay {
       setTimeout(() => this.attachIframeEscape(), 150);
       setTimeout(() => this.attachIframeEscape(), 600);
       setTimeout(() => this.attachIframeEscape(), 1500);
+
+      // Start stream capture monitoring for WebRTC watch party
+      this.startStreamMonitoring(game.id);
     }
 
     if (this.overlay) {
@@ -148,10 +155,71 @@ export class ArcadePlayOverlay {
     }
   }
 
+  captureGameStream() {
+    if (!this.iframe) return null;
+    try {
+      const doc = this.iframe.contentDocument || this.iframe.contentWindow?.document;
+      if (!doc) return null;
+      const canvas = doc.querySelector('canvas');
+      if (canvas && typeof canvas.captureStream === 'function') {
+        return canvas.captureStream(24); // 24 FPS stream
+      }
+    } catch (e) {
+      // Cross-origin restriction (expected for non-local iframes)
+    }
+    return null;
+  }
+
+  startStreamMonitoring(gameId) {
+    if (this._streamPollTimer) clearInterval(this._streamPollTimer);
+
+    let attempts = 0;
+    const maxAttempts = 15; // Poll every 400ms for up to 6 seconds while game boots
+
+    this._streamPollTimer = setInterval(() => {
+      attempts++;
+      if (!this.isOpen) {
+        clearInterval(this._streamPollTimer);
+        this._streamPollTimer = null;
+        return;
+      }
+
+      const stream = this.captureGameStream();
+      if (stream) {
+        clearInterval(this._streamPollTimer);
+        this._streamPollTimer = null;
+        this.currentStream = stream;
+        console.log(`[Watch Party] Captured game stream for ${gameId} (${stream.getVideoTracks().length} video track)`);
+        if (this.onStreamReady) {
+          this.onStreamReady(stream, gameId);
+        }
+      } else if (attempts >= maxAttempts) {
+        clearInterval(this._streamPollTimer);
+        this._streamPollTimer = null;
+      }
+    }, 400);
+  }
+
   close() {
     if (!this.isOpen) return;
+    const closingGameId = this.activeGame ? this.activeGame.id : null;
     this.isOpen = false;
     window.__arcadeOverlayOpen = false;
+
+    // Stop stream polling and active media stream tracks
+    if (this._streamPollTimer) {
+      clearInterval(this._streamPollTimer);
+      this._streamPollTimer = null;
+    }
+    if (this.currentStream) {
+      try {
+        this.currentStream.getTracks().forEach(track => track.stop());
+      } catch (e) {}
+      this.currentStream = null;
+    }
+    if (this.onStreamEnded && closingGameId) {
+      this.onStreamEnded(closingGameId);
+    }
 
     // Immediately exit fullscreen if active
     if (document.fullscreenElement) {

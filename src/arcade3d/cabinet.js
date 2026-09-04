@@ -105,30 +105,49 @@ function createOccupancyBadge() {
   sprite.position.set(0, 3.65, 0.45);
   sprite.visible = false;
 
-  const setPlayer = (tag) => {
+  const setPlayer = (tag, isLive = false, spectatorCount = 0) => {
     if (!tag) {
       sprite.visible = false;
       return;
     }
     ctx.clearRect(0, 0, 512, 128);
 
-    // Glowing cyberpunk capsule pill
-    ctx.fillStyle = 'rgba(6, 10, 25, 0.92)';
-    ctx.strokeStyle = '#05ffa1';
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.roundRect(14, 14, 484, 100, 24);
-    ctx.fill();
-    ctx.stroke();
+    if (isLive) {
+      // Pulsing glowing red cyberpunk capsule pill for LIVE broadcast
+      ctx.fillStyle = 'rgba(25, 4, 10, 0.94)';
+      ctx.strokeStyle = '#ff0055';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.roundRect(14, 14, 484, 100, 24);
+      ctx.fill();
+      ctx.stroke();
 
-    // Glowing icon and tag text
-    ctx.font = 'bold 30px "Outfit", "Segoe UI", sans-serif';
-    ctx.fillStyle = '#05ffa1';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = '#05ffa1';
-    ctx.shadowBlur = 14;
-    ctx.fillText(`🕹️ [${tag.toUpperCase()}] JOGANDO`, 256, 64);
+      ctx.font = 'bold 28px "Outfit", "Segoe UI", sans-serif';
+      ctx.fillStyle = '#ff2a70';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = '#ff0055';
+      ctx.shadowBlur = 18;
+      const countSuffix = spectatorCount > 0 ? ` • 👁️ ${spectatorCount}` : '';
+      ctx.fillText(`🔴 AO VIVO [${tag.toUpperCase()}]${countSuffix}`, 256, 64);
+    } else {
+      // Standard cyberpunk green capsule pill
+      ctx.fillStyle = 'rgba(6, 10, 25, 0.92)';
+      ctx.strokeStyle = '#05ffa1';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.roundRect(14, 14, 484, 100, 24);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.font = 'bold 30px "Outfit", "Segoe UI", sans-serif';
+      ctx.fillStyle = '#05ffa1';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = '#05ffa1';
+      ctx.shadowBlur = 14;
+      ctx.fillText(`🕹️ [${tag.toUpperCase()}] JOGANDO`, 256, 64);
+    }
 
     texture.needsUpdate = true;
     sprite.visible = true;
@@ -346,19 +365,98 @@ export function createArcadeCabinet(game, position, rotationY = 0) {
     collisionBox,
     isHovered: false,
     _lastFrame: 0,
+    activeVideoElement: null,
+    videoTexture: null,
+    isLiveStreaming: false,
+    liveStreamTag: null,
+    spectatorCount: 0,
+    setLiveStream(mediaStream, tag = 'PILOTO') {
+      if (!mediaStream) return;
+      this.isLiveStreaming = true;
+      this.liveStreamTag = tag;
+      this.occupiedBy = tag;
+      this.occupancyBadge.setPlayer(tag, true, this.spectatorCount);
+
+      if (this.activeVideoElement) {
+        try {
+          this.activeVideoElement.pause();
+          this.activeVideoElement.srcObject = null;
+        } catch (e) {}
+        this.activeVideoElement = null;
+      }
+      if (this.videoTexture) {
+        this.videoTexture.dispose();
+        this.videoTexture = null;
+      }
+
+      const video = document.createElement('video');
+      video.autoplay = true;
+      video.muted = true; // Visual feed only as requested by user ("apenas feed visual por hora")
+      video.playsInline = true;
+      video.srcObject = mediaStream;
+      video.play().catch(() => {});
+
+      this.activeVideoElement = video;
+
+      const videoTex = new THREE.VideoTexture(video);
+      videoTex.minFilter = THREE.NearestFilter;
+      videoTex.magFilter = THREE.NearestFilter;
+      videoTex.generateMipmaps = false;
+      videoTex.format = THREE.RGBAFormat;
+
+      this.videoTexture = videoTex;
+      this.screenMesh.material.map = videoTex;
+      this.screenMesh.material.needsUpdate = true;
+    },
+    clearLiveStream() {
+      this.isLiveStreaming = false;
+      this.liveStreamTag = null;
+      if (this.activeVideoElement) {
+        try {
+          this.activeVideoElement.pause();
+          this.activeVideoElement.srcObject = null;
+        } catch (e) {}
+        this.activeVideoElement = null;
+      }
+      if (this.videoTexture) {
+        this.videoTexture.dispose();
+        this.videoTexture = null;
+      }
+      this.screenMesh.material.map = screenTex;
+      this.screenMesh.material.needsUpdate = true;
+      if (this.occupiedBy) {
+        this.occupancyBadge.setPlayer(this.occupiedBy, false);
+      } else {
+        this.occupancyBadge.setPlayer(null);
+      }
+    },
     setOccupiedBy(tag) {
       this.occupiedBy = tag;
-      this.occupancyBadge.setPlayer(tag);
+      this.occupancyBadge.setPlayer(tag, this.isLiveStreaming, this.spectatorCount);
     },
     clearOccupied() {
       this.occupiedBy = null;
-      this.occupancyBadge.setPlayer(null);
+      if (this.isLiveStreaming) {
+        this.clearLiveStream();
+      } else {
+        this.occupancyBadge.setPlayer(null);
+      }
     },
     update(time, playerPos) {
       // Bob occupancy badge subtly when active
       if (this.occupiedBy && this.occupancyBadge.sprite.visible) {
         this.occupancyBadge.sprite.position.y = 3.65 + Math.sin(time * 3.5) * 0.06;
       }
+
+      if (this.isLiveStreaming) {
+        // Floor neon pulses vivid cyberpunk red during live streams
+        floorGlow.material.color.setHex(0xff0055);
+        floorGlow.material.opacity = 0.75 + Math.sin(time * 7.0) * 0.25;
+        return;
+      }
+
+      // Restore standard theme floor glow color if not streaming
+      floorGlow.material.color.setHex(theme.primary);
 
       // Distance-based Level of Detail (LOD) & Occlusion Culling
       // If player is farther than 8.5m and cabinet is neither hovered nor occupied, skip canvas redraw!
