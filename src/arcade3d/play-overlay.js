@@ -274,9 +274,15 @@ export class ArcadePlayOverlay {
 
         // Choose frame source: video compositor if active, otherwise direct canvas
         let source = null;
-        if (this._captureVideo && this._captureVideo.videoWidth > 0 && !this._captureVideo.paused) {
-          source = this._captureVideo;
-        } else if (canvas && (canvas.width > 0 || canvas.videoWidth > 0)) {
+        if (this._captureVideo) {
+          if (this._captureVideo.paused) {
+            this._captureVideo.play().catch(() => {});
+          }
+          if (this._captureVideo.videoWidth > 0) {
+            source = this._captureVideo;
+          }
+        }
+        if (!source && canvas && (canvas.width > 0 || canvas.videoWidth > 0)) {
           source = canvas;
         }
 
