@@ -80,7 +80,7 @@
       "bpm": 132,
       "plays": "14,820,000",
       "cover": "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=600&q=80",
-      "audioUrl": "/music/audio/sf2-guile-theme.m4a",
+      "audioUrl": "music/audio/sf2-guile-theme.m4a",
       "genre": "Fighting / Hype Trumpet",
       "lyrics": [
         { "time": 0.0, "text": "♪ (Iconic Slap Bass & Brass Melody) ♪" },
@@ -102,7 +102,7 @@
       "bpm": 140,
       "plays": "9,450,000",
       "cover": "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80",
-      "audioUrl": "/music/audio/sf2-ryu-theme.m4a",
+      "audioUrl": "music/audio/sf2-ryu-theme.m4a",
       "genre": "Fighting / 90s Rock",
       "lyrics": [
         { "time": 0.0, "text": "♪ (Suzaku Castle Rooftop Wind & Drums) ♪" },
@@ -122,7 +122,7 @@
       "bpm": 128,
       "plays": "8,120,000",
       "cover": "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=600&q=80",
-      "audioUrl": "/music/audio/sor2-go-straight.m4a",
+      "audioUrl": "music/audio/sor2-go-straight.m4a",
       "genre": "Detroit Club Techno",
       "lyrics": [
         { "time": 0.0, "text": "♪ (Underground 90s Rave Piano Intro) ♪" },
@@ -143,7 +143,7 @@
       "bpm": 125,
       "plays": "11,240,000",
       "cover": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80",
-      "audioUrl": "/music/audio/outrun-magical-sound-shower.m4a",
+      "audioUrl": "music/audio/outrun-magical-sound-shower.m4a",
       "genre": "Arcade Latin Fusion",
       "lyrics": [
         { "time": 0.0, "text": "♪ (Radio Tuner FM: Magical Sound Shower selected) ♪" },
@@ -164,7 +164,7 @@
       "bpm": 115,
       "plays": "22,500,000",
       "cover": "https://images.unsplash.com/photo-1612287233215-6f6eb8b7100e?auto=format&fit=crop&w=600&q=80",
-      "audioUrl": "/music/audio/mario-world-overworld.m4a",
+      "audioUrl": "music/audio/mario-world-overworld.m4a",
       "genre": "Calypso / Steel Drum",
       "lyrics": [
         { "time": 0.0, "text": "♪ (Cheerful Steel Drum & Yoshi Bongos) ♪" },
@@ -184,7 +184,7 @@
       "bpm": 150,
       "plays": "13,900,000",
       "cover": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80",
-      "audioUrl": "/music/audio/sonic2-chemical-plant.m4a",
+      "audioUrl": "music/audio/sonic2-chemical-plant.m4a",
       "genre": "Synth-Funk / Fast Slap Bass",
       "lyrics": [
         { "time": 0.0, "text": "♪ (Blistering Synth-Funk Slap Bass Intro) ♪" },
@@ -204,7 +204,7 @@
       "bpm": 138,
       "plays": "18,200,000",
       "cover": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80",
-      "audioUrl": "/music/audio/sonic1-green-hill.m4a",
+      "audioUrl": "music/audio/sonic1-green-hill.m4a",
       "genre": "16-Bit Sunshine Pop",
       "lyrics": [
         { "time": 0.0, "text": "♪ (Checkered Grass Hills & Palm Trees) ♪" },
@@ -223,7 +223,7 @@
       "bpm": 154,
       "plays": "10,300,000",
       "cover": "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&w=600&q=80",
-      "audioUrl": "/music/audio/fzero-mute-city.m4a",
+      "audioUrl": "music/audio/fzero-mute-city.m4a",
       "genre": "Futuristic Jazz Fusion",
       "lyrics": [
         { "time": 0.0, "text": "♪ (Mode 7 Scaling Highway Engine Roar) ♪" },
@@ -243,7 +243,7 @@
       "bpm": 158,
       "plays": "7,800,000",
       "cover": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80",
-      "audioUrl": "/music/audio/fzero-big-blue.m4a",
+      "audioUrl": "music/audio/fzero-big-blue.m4a",
       "genre": "Relentless Space Slap Bass",
       "lyrics": [
         { "time": 0.0, "text": "♪ (Deep Slap Bassline Over Ocean Circuits) ♪" },
@@ -262,7 +262,7 @@
       "bpm": 134,
       "plays": "16,400,000",
       "cover": "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=600&q=80",
-      "audioUrl": "/music/audio/mk-techno-syndrome.m4a",
+      "audioUrl": "music/audio/mk-techno-syndrome.m4a",
       "genre": "90s Acid Techno / Rave",
       "lyrics": [
         { "time": 0.0, "text": "MORTAL KOMBAT!" },
@@ -284,7 +284,7 @@
       "bpm": 160,
       "plays": "12,100,000",
       "cover": "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=600&q=80",
-      "audioUrl": "/music/audio/doom-e1m1.m4a",
+      "audioUrl": "music/audio/doom-e1m1.m4a",
       "genre": "Heavy Metal / Thrash MIDI",
       "lyrics": [
         { "time": 0.0, "text": "♪ (Iconic Distorted E1M1 Guitar Riffs) ♪" },
@@ -304,7 +304,7 @@
       "bpm": 170,
       "plays": "7,400,000",
       "cover": "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=600&q=80",
-      "audioUrl": "/music/audio/gta2-short-change.m4a",
+      "audioUrl": "music/audio/gta2-short-change.m4a",
       "genre": "UK Drum & Bass / Jungle",
       "lyrics": [
         { "time": 0.0, "text": "♪ (Fast 90s UK Drum & Bass Intro) ♪" },
@@ -324,7 +324,7 @@
       "bpm": 146,
       "plays": "11,800,000",
       "cover": "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80",
-      "audioUrl": "/music/audio/megaman2-dr-wily.m4a",
+      "audioUrl": "music/audio/megaman2-dr-wily.m4a",
       "genre": "8-Bit Chiptune Metal Anthem",
       "lyrics": [
         { "time": 0.0, "text": "♪ (The Greatest 8-Bit Melody Ever Written) ♪" },
@@ -344,7 +344,7 @@
       "bpm": 136,
       "plays": "8,700,000",
       "cover": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80",
-      "audioUrl": "/music/audio/daytona-usa-lets-go-away.m4a",
+      "audioUrl": "music/audio/daytona-usa-lets-go-away.m4a",
       "genre": "Arcade Vocal Rock",
       "lyrics": [
         { "time": 0.0, "text": "DAYTOOOONAAAAA!" },
@@ -364,7 +364,7 @@
       "bpm": 144,
       "plays": "9,900,000",
       "cover": "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=600&q=80",
-      "audioUrl": "/music/audio/castlevania-bloody-tears.m4a",
+      "audioUrl": "music/audio/castlevania-bloody-tears.m4a",
       "genre": "Gothic Organ Synth Rock",
       "lyrics": [
         { "time": 0.0, "text": "♪ (High Speed Gothic Organ Arpeggios) ♪" },
