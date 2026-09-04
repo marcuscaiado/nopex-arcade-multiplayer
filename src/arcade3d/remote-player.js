@@ -184,14 +184,6 @@ export class RemoteArcadePlayer {
     this.targetRotation = rotY;
     this.isMoving = !!isMoving;
     this.lastActiveTime = Date.now();
-
-    if (this.isMoving && this.statusText === 'ONLINE') {
-      this.statusText = 'ANDANDO';
-      this.renderNameTagCanvas();
-    } else if (!this.isMoving && this.statusText === 'ANDANDO') {
-      this.statusText = 'ONLINE';
-      this.renderNameTagCanvas();
-    }
   }
 
   setActivity(statusText) {
@@ -202,14 +194,15 @@ export class RemoteArcadePlayer {
   update(dt, camera) {
     if (!this.group) return;
 
-    // Smooth LERP position
-    this.group.position.lerp(this.targetPosition, 0.22);
+    // Delta-time independent butter-smooth LERP
+    const lerpFactor = Math.min(1.0, 1.0 - Math.exp(-14 * dt));
+    this.group.position.lerp(this.targetPosition, lerpFactor);
 
     // Smooth Rotation
     let diff = this.targetRotation - this.group.rotation.y;
     while (diff < -Math.PI) diff += Math.PI * 2;
     while (diff > Math.PI) diff -= Math.PI * 2;
-    this.group.rotation.y += diff * 0.22;
+    this.group.rotation.y += diff * lerpFactor;
 
     // Walk Animation
     if (this.isMoving) {

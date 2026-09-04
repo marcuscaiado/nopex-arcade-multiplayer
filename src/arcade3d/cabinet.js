@@ -363,12 +363,18 @@ export function createArcadeCabinet(game, position, rotationY = 0) {
     collisionBox,
     isHovered: false,
     _lastFrame: 0,
-    update(time) {
+    update(time, player) {
       if (this.isHovered) {
         updateScreenTex(time);
         floorGlow.material.opacity = 0.7 + Math.sin(time * 6.0) * 0.25;
       } else {
-        const frame = Math.floor(time * 2);
+        // Distance culling: Only update CRT canvas if player is within 12 meters
+        if (player) {
+          const dx = player.x - position.x;
+          const dz = player.z - position.z;
+          if (dx * dx + dz * dz > 144) return;
+        }
+        const frame = Math.floor(time * 1.5);
         if (this._lastFrame !== frame) {
           this._lastFrame = frame;
           updateScreenTex(time);

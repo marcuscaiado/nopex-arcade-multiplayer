@@ -8,10 +8,20 @@ export class ArcadeNetwork {
     this.scoreTicker = scoreTicker;
     this.peers = new Map(); // peerId -> RemoteArcadePlayer
     this.room = null;
-    this.sendPos = null;
-    this.sendId = null;
-    this.sendAct = null;
-    this.sendScore = null;
+
+    // Actions
+    this.posAction = null;
+    this.idAction = null;
+    this.actAction = null;
+    this.scoreAction = null;
+
+    // Rate limiting & dead reckoning telemetry variables
+    this.lastBroadcastTime = 0;
+    this.lastSentX = null;
+    this.lastSentZ = null;
+    this.lastSentRot = null;
+    this.lastSentMoving = null;
+    this.heartbeatTimer = null;
 
     this.hudEl = null;
     this.createHud();
@@ -77,7 +87,13 @@ export class ArcadeNetwork {
           'wss://relay.damus.io',
           'wss://relay.primal.net',
           'wss://purplerelay.com'
-        ]
+        ],
+        rtcConfig: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+          ]
+        }
       };
       const roomId = 'nopex-main-hub';
 
@@ -92,8 +108,8 @@ export class ArcadeNetwork {
       // 2. Peer Handshakes
       this.room.onPeerJoin = (peerId) => {
         console.log(`[WebRTC] Peer connected: ${peerId}`);
-        // Send our identity to the new peer
-        if (this.idAction) {
+        // Send our identity directly to the newly connected peer
+        if (this.idAction && this.identity) {
           this.idAction.send({
             tag: this.identity.tag,
             colorHex: this.identity.colorHex
@@ -112,20 +128,31 @@ export class ArcadeNetwork {
         this.updateHudCount();
       };
 
-      // 3. Receive Peer Identity
+      // 3. Receive Peer Identity (Bidirectional Handshake & Dynamic Recovery)
       this.idAction.onMessage = (data, { peerId }) => {
         if (!data || !data.tag) return;
         if (this.peers.has(peerId)) {
           const remote = this.peers.get(peerId);
-          remote.tag = data.tag.slice(0, 5).toUpperCase();
-          remote.colorHex = data.colorHex || '#00f5ff';
-          remote.renderNameTagCanvas();
+          if (remote.tag !== data.tag || remote.colorHex !== data.colorHex) {
+            remote.tag = data.tag.slice(0, 5).toUpperCase();
+            remote.colorHex = data.colorHex || '#00f5ff';
+            remote.renderNameTagCanvas();
+          }
         } else {
           // Limit to 10 peers max (9 remotes + local player)
           if (this.peers.size >= 9) return;
           const remote = new RemoteArcadePlayer(this.scene, peerId, data.tag, data.colorHex);
           this.peers.set(peerId, remote);
           this.updateHudCount();
+
+          // CRITICAL: Immediately send our identity back targeted to this peer
+          // to guarantee mutual discovery without needing a page refresh!
+          if (this.idAction && this.identity) {
+            this.idAction.send({
+              tag: this.identity.tag,
+              colorHex: this.identity.colorHex
+            }, { target: peerId });
+          }
         }
       };
 
@@ -135,6 +162,14 @@ export class ArcadeNetwork {
         const remote = this.peers.get(peerId);
         if (remote) {
           remote.setTelemetry(data.x, data.z, data.r, data.m);
+        } else {
+          // Received telemetry from an unmapped peer: self-heal by requesting identity!
+          if (this.idAction && this.identity) {
+            this.idAction.send({
+              tag: this.identity.tag,
+              colorHex: this.identity.colorHex
+            }, { target: peerId });
+          }
         }
       };
 
@@ -155,21 +190,52 @@ export class ArcadeNetwork {
         }
       };
 
+      // 7. Periodic Presence Heartbeat (every 2.5s)
+      // Ensures newly joined peers are detected within 2 seconds without requiring refresh
+      if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = setInterval(() => {
+        if (this.idAction && this.identity) {
+          this.broadcastIdentity();
+        }
+      }, 2500);
+
     } catch (err) {
       console.warn('[WebRTC] Connection failed, operating in offline hub mode:', err);
     }
   }
 
   broadcastIdentity() {
-    if (!this.idAction) return;
+    if (!this.idAction || !this.identity) return;
     this.idAction.send({
       tag: this.identity.tag,
       colorHex: this.identity.colorHex
     });
   }
 
+  // Rate-limited to max 20 Hz (50ms) + Dead Reckoning
   broadcastLocalPosition(x, z, rotY, isMoving) {
     if (!this.posAction) return;
+
+    const now = performance.now();
+    // Cap telemetry at 20 Hz to prevent network flooding and frame drops
+    if (now - this.lastBroadcastTime < 50) return;
+
+    const dx = this.lastSentX !== null ? Math.abs(x - this.lastSentX) : 999;
+    const dz = this.lastSentZ !== null ? Math.abs(z - this.lastSentZ) : 999;
+    const dr = this.lastSentRot !== null ? Math.abs(rotY - this.lastSentRot) : 999;
+    const dm = isMoving !== this.lastSentMoving;
+
+    // Dead-reckoning: if standing still and within 0.02m threshold, don't spam packets (keepalive every 1.5s)
+    if (dx < 0.02 && dz < 0.02 && dr < 0.03 && !dm && (now - this.lastBroadcastTime < 1500)) {
+      return;
+    }
+
+    this.lastBroadcastTime = now;
+    this.lastSentX = x;
+    this.lastSentZ = z;
+    this.lastSentRot = rotY;
+    this.lastSentMoving = isMoving;
+
     this.posAction.send({
       x: Math.round(x * 100) / 100,
       z: Math.round(z * 100) / 100,

@@ -48,7 +48,7 @@ export class Arcade3DEngine {
       powerPreference: 'high-performance'
     });
     this.renderer.setSize(width, height);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
 
     this.container.appendChild(this.renderer.domElement);
     this.clock = new THREE.Clock();
@@ -360,6 +360,7 @@ export class Arcade3DEngine {
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
   }
 
   start() {
@@ -379,10 +380,21 @@ export class Arcade3DEngine {
     requestAnimationFrame(() => this.animate());
 
     const delta = Math.min(this.clock.getDelta(), 0.1);
+
+    // CRITICAL: When game overlay is active (e.g. playing Bomberman, Mario, GTA 2),
+    // PAUSE 3D rendering and world updates to allocate 100% CPU and GPU to the emulator!
+    if (this.overlay && this.overlay.isOpen) {
+      if (this.network) {
+        // Lightweight network keepalive tick only
+        this.network.update(delta, this.camera);
+      }
+      return;
+    }
+
     const time = this.clock.getElapsedTime();
 
-    // 1. Update World & Cabinets
-    this.world.update(time);
+    // 1. Update World & Cabinets (with player position for distance culling)
+    this.world.update(time, this.player);
 
     // Animate tap destination ring
     if (this.destinationPulse > 0) {
@@ -395,13 +407,9 @@ export class Arcade3DEngine {
       }
     }
 
-    // 2. Update Player if not currently in game overlay
-    if (!this.overlay.isOpen) {
-      this.player.update(delta, this.world.roomBounds, this.world.cabinets, this.camera);
-      this.interaction.update(this.player);
-    } else if (this.player.nameSprite && this.camera) {
-      this.player.nameSprite.quaternion.copy(this.camera.quaternion);
-    }
+    // 2. Update Player
+    this.player.update(delta, this.world.roomBounds, this.world.cabinets, this.camera);
+    this.interaction.update(this.player);
 
     // 3. Update WebRTC Network Telemetry & Remote Players
     if (this.network) {
