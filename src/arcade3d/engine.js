@@ -92,6 +92,7 @@ export class Arcade3DEngine {
       this.isZoomingIn = false;
       this.zoomTarget = null;
       this.zoomProgress = 0;
+      this.clock.getDelta(); // Reset clock delta so camera doesn't jump
       if (this.network) this.network.broadcastActivity('ONLINE');
     });
   }

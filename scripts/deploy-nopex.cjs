@@ -22,12 +22,12 @@ console.log('📌 Committing updates to master branch...');
 execSync('git add -A', { stdio: 'inherit' });
 const masterStatus = execSync('git status -s', { encoding: 'utf8' }).trim();
 if (masterStatus) {
-  execSync('git commit -m "feat(arcade): add all 9 retro classic games (Sonic 1, Sonic 2, F-Zero, MK2, Mega Man 2, OutRun, SOR2, Top Gear, Super Castlevania IV) with low-end mobile & gamepad optimization"', { stdio: 'inherit' });
+  execSync('git commit -m "perf: ⚡ fix gameplay stuttering & freezing with WebGL2 acceleration, 60 FPS CPU overclocking, 128ms audio buffer & 3D render suspension"', { stdio: 'inherit' });
   execSync('git push origin master', { stdio: 'inherit' });
 }
 
 console.log('🚀 Deploying production bundle to gh-pages...');
-const tempDist = path.resolve('../.temp-dist-nopex-arcade');
+const tempDist = path.resolve('../.temp-dist-nopex-arcade-multiplayer');
 if (fs.existsSync(tempDist)) fs.rmSync(tempDist, { recursive: true, force: true });
 copyFolderSync('dist', tempDist);
 
@@ -48,7 +48,7 @@ fs.writeFileSync('.nojekyll', '');
 execSync('git add -A', { stdio: 'inherit' });
 const status = execSync('git status -s', { encoding: 'utf8' }).trim();
 if (status) {
-  execSync('git commit -m "deploy: 🚀 add all 9 retro classic games with low-end mobile & gamepad optimization"', { stdio: 'inherit' });
+  execSync('git commit -m "deploy: ⚡ ultra-smooth 60 FPS locked emulation performance with WebGL2 & low-latency audio"', { stdio: 'inherit' });
   execSync('git push origin gh-pages', { stdio: 'inherit' });
 }
 
