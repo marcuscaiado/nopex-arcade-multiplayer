@@ -12,7 +12,7 @@ export const COLOR_PALETTES = [
 export class IdentityManager {
   constructor(onReady) {
     this.onReady = onReady;
-    this.tag = localStorage.getItem('ARCADE_MP_TAG') || '';
+    this.tag = localStorage.getItem('ARCADE_MP_TAG') || 'MARC1';
     this.colorHex = localStorage.getItem('ARCADE_MP_COLOR') || '#00f5ff';
     this.modalEl = null;
 
