@@ -203,28 +203,33 @@ export function buildArcadeWorld(scene, gamesManifest) {
 
   // 4. Large Neon Signage
   const mainSign = createNeonBanner('⚡ NOPEX VIRTUAL ARCADE ⚡', 24, 6, '#00f5ff', '#ff007f');
-  mainSign.position.set(0, 7.5, -29.2);
+  mainSign.position.set(0, 8.2, -29.2);
   worldGroup.add(mainSign);
 
   const rotundaSign = createNeonBanner('🌟 SPOTLIGHT MEGAHITS', 10, 2.5, '#ffd32a', '#ff007f');
-  rotundaSign.position.set(0, 6.2, -2);
+  rotundaSign.position.set(0, 6.5, -3.5);
   worldGroup.add(rotundaSign);
 
-  const actionSign = createNeonBanner('⚔️ ACTION ALLEY', 10, 2.5, '#ff007f', '#00f5ff');
-  actionSign.position.set(-18, 6.2, -4);
+  const actionSign = createNeonBanner('⚔️ ACTION & FIGHTING ALLEY', 14, 2.5, '#ff007f', '#00f5ff');
+  actionSign.position.set(-18.5, 6.5, -3.5);
   actionSign.rotation.y = Math.PI / 2;
   worldGroup.add(actionSign);
 
-  const sportsSign = createNeonBanner('🎱 SPORTS & CASUAL', 10, 2.5, '#05ffa1', '#ffd32a');
-  sportsSign.position.set(18, 6.2, -4);
+  const retroSign = createNeonBanner('🕹️ RETRO VAULT & 16-BIT LEGENDS', 15, 2.5, '#7928ca', '#00f5ff');
+  retroSign.position.set(0, 6.5, -25.5);
+  worldGroup.add(retroSign);
+
+  const speedwaySign = createNeonBanner('🏎️ SPEEDWAY & RACING', 12, 2.5, '#ff3838', '#ffd32a');
+  speedwaySign.position.set(11.5, 6.5, -10.0);
+  speedwaySign.rotation.y = -Math.PI / 2;
+  worldGroup.add(speedwaySign);
+
+  const sportsSign = createNeonBanner('🎱 SPORTS & CASUAL ARCADE', 12, 2.5, '#05ffa1', '#ffd32a');
+  sportsSign.position.set(20.0, 6.5, -5.0);
   sportsSign.rotation.y = -Math.PI / 2;
   worldGroup.add(sportsSign);
 
-  const retroSign = createNeonBanner('🕹️ RETRO VAULT', 12, 2.5, '#7928ca', '#00f5ff');
-  retroSign.position.set(0, 5.8, -24.5);
-  worldGroup.add(retroSign);
-
-  // 5. Place the 20 Arcade Cabinets
+  // 5. Place the 37 Arcade Cabinets
   const gameMap = {};
   gamesManifest.forEach(g => { gameMap[g.id] = g; });
 
@@ -237,45 +242,56 @@ export function buildArcadeWorld(scene, gamesManifest) {
     cabinets.push(cab);
   };
 
-  // ENTRANCE GRAND SHOWCASE: 4 Historic MegaHits Flanking the Grand Entrance Corridor (Facing South)
-  addCabinet('classic-doom',        { x: -5.4, z: 2.8 }, 0);              // 🔥 Classic DOOM (1993)
-  addCabinet('classic-pacman',      { x: -1.8, z: 2.8 }, 0);              // 🟡 Pac-Man (1980 Classic Arcade)
-  addCabinet('neon-tetris-3d',      { x: 1.8, z: 2.8 }, 0);               // 🧱 Neon Cyber Tetris 3D
-  const jukebox = createJukeboxCabinet({ x: 5.4, z: 2.8 }, 0);            // 📻 Retro Arcade Jukebox Pavilion
+  // ENTRANCE GRAND SHOWCASE: 4 Historic MegaHits (Z = 5.0, Facing South)
+  addCabinet('classic-doom',        { x: -5.4, z: 5.0 }, 0);              // 🔥 Classic DOOM (1993)
+  addCabinet('classic-pacman',      { x: -1.8, z: 5.0 }, 0);              // 🟡 Pac-Man (1980 Classic Arcade)
+  addCabinet('neon-tetris-3d',      { x: 1.8, z: 5.0 }, 0);               // 🧱 Neon Cyber Tetris 3D
+  const jukebox = createJukeboxCabinet({ x: 5.4, z: 5.0 }, 0);            // 📻 Retro Arcade Jukebox Pavilion
   worldGroup.add(jukebox.group);
   cabinets.push(jukebox);
 
   // ZONE 1: CENTER ROTUNDA (4 Spotlight MegaHits in 4 Cardinal Directions)
-  addCabinet('geometricsurvivor',   { x: 0, z: -8.8 }, 0);                // Faces North
-  addCabinet('cyber-pong-3d',       { x: 0, z: -2.0 }, Math.PI);          // Faces South
-  addCabinet('neon-viper',          { x: -6.0, z: -5.5 }, Math.PI / 2);   // Faces East
-  addCabinet('cute-mini-golf',      { x: 6.0, z: -5.5 }, -Math.PI / 2);   // Faces West
+  addCabinet('geometricsurvivor',   { x: 0, z: -10.0 }, 0);               // Faces North
+  addCabinet('cyber-pong-3d',       { x: 0, z: 2.5 }, Math.PI);           // Faces South
+  addCabinet('neon-viper',          { x: -6.5, z: -3.5 }, Math.PI / 2);   // Faces East
+  addCabinet('cute-mini-golf',      { x: 6.5, z: -3.5 }, -Math.PI / 2);   // Faces West
 
-  // ZONE 2: ACTION ALLEY (West Side, X = -18, Facing East)
-  addCabinet('street-fighter-2',    { x: -18, z: -18 }, Math.PI / 2);
-  addCabinet('gta-2',               { x: -18, z: -12.5 }, Math.PI / 2);
-  addCabinet('neon-katana-slash',   { x: -18, z: -7 }, Math.PI / 2);
-  addCabinet('stickman-fps-arcade', { x: -18, z: -1.5 }, Math.PI / 2);
-  addCabinet('sky-ace-1944',        { x: -18, z: 4 }, Math.PI / 2);
-  addCabinet('asteroid-blitz',      { x: -18, z: 9.5 }, Math.PI / 2);
-  addCabinet('cyber-shuriken',      { x: -18, z: 15 }, Math.PI / 2);
+  // ZONE 2: ACTION & FIGHTING ALLEY (West Wall, X = -19.5, Facing East)
+  addCabinet('street-fighter-2',    { x: -19.5, z: -23.0 }, Math.PI / 2);
+  addCabinet('mk2',                 { x: -19.5, z: -18.5 }, Math.PI / 2);
+  addCabinet('sor2',                { x: -19.5, z: -14.0 }, Math.PI / 2);
+  addCabinet('gta-2',               { x: -19.5, z: -9.5 },  Math.PI / 2);
+  addCabinet('neon-katana-slash',   { x: -19.5, z: -5.0 },  Math.PI / 2);
+  addCabinet('stickman-fps-arcade', { x: -19.5, z: -0.5 },  Math.PI / 2);
+  addCabinet('castlevania4',        { x: -19.5, z: 4.0 },   Math.PI / 2);
+  addCabinet('sky-ace-1944',        { x: -19.5, z: 8.5 },   Math.PI / 2);
+  addCabinet('asteroid-blitz',      { x: -19.5, z: 13.0 },  Math.PI / 2);
+  addCabinet('cyber-shuriken',      { x: -19.5, z: 17.5 },  Math.PI / 2);
 
-  // ZONE 3: SPORTS & CASUAL (East Wall, X = +18, Facing West)
-  addCabinet('kawaii-8ball-pool',   { x: 18, z: -18 }, -Math.PI / 2);
-  addCabinet('neon-pachinko-pop',   { x: 18, z: -12.5 }, -Math.PI / 2);
-  addCabinet('neon-archery-master', { x: 18, z: -7 }, -Math.PI / 2);
-  addCabinet('brick-breaker-fx',    { x: 18, z: -1.5 }, -Math.PI / 2);
-  addCabinet('neon-drop-2048',      { x: 18, z: 4 }, -Math.PI / 2);
-  addCabinet('cyber-pinball-fx',    { x: 18, z: 9.5 }, -Math.PI / 2);
-  addCabinet('flappy-cyber-droid',  { x: 18, z: 15 }, -Math.PI / 2);
+  // ZONE 3: RETRO VAULT & 16-BIT LEGENDS (North Wall, Z = -26.5, Facing South)
+  addCabinet('sonic1',              { x: -11.4, z: -26.5 }, 0);
+  addCabinet('sonic2',              { x: -7.6,  z: -26.5 }, 0);
+  addCabinet('megaman2',            { x: -3.8,  z: -26.5 }, 0);
+  addCabinet('super-mario',         { x: 0.0,   z: -26.5 }, 0);
+  addCabinet('super-bomberman',     { x: 3.8,   z: -26.5 }, 0);
+  addCabinet('neon-stack-3d',       { x: 7.6,   z: -26.5 }, 0);
+  addCabinet('neon-orbit-drift',    { x: 11.4,  z: -26.5 }, 0);
 
-  // ZONE 4: RETRO VAULT (North Wall, Z = -26, Facing South)
-  addCabinet('neon-drift-racer',    { x: -12.5, z: -26 }, 0);
-  addCabinet('cyber-runner-3d',     { x: -7.5, z: -26 }, 0);
-  addCabinet('super-mario',         { x: -2.5, z: -26 }, 0);
-  addCabinet('super-bomberman',     { x: 2.5, z: -26 }, 0);
-  addCabinet('neon-stack-3d',       { x: 7.5, z: -26 }, 0);
-  addCabinet('neon-orbit-drift',    { x: 12.5, z: -26 }, 0);
+  // ZONE 4: SPEEDWAY BOULEVARD / RACING ROW (Inner East Aisle, X = 11.5, Facing West)
+  addCabinet('topgear',             { x: 11.5, z: -20.0 }, -Math.PI / 2);
+  addCabinet('fzero',               { x: 11.5, z: -15.0 }, -Math.PI / 2);
+  addCabinet('outrun',              { x: 11.5, z: -10.0 }, -Math.PI / 2);
+  addCabinet('neon-drift-racer',    { x: 11.5, z: -5.0 },  -Math.PI / 2);
+  addCabinet('cyber-runner-3d',     { x: 11.5, z: 0.0 },   -Math.PI / 2);
+
+  // ZONE 5: SPORTS & CASUAL ARCADE (East Wall, X = 20.5, Facing West)
+  addCabinet('kawaii-8ball-pool',   { x: 20.5, z: -20.0 }, -Math.PI / 2);
+  addCabinet('neon-pachinko-pop',   { x: 20.5, z: -15.0 }, -Math.PI / 2);
+  addCabinet('neon-archery-master', { x: 20.5, z: -10.0 }, -Math.PI / 2);
+  addCabinet('brick-breaker-fx',    { x: 20.5, z: -5.0 },  -Math.PI / 2);
+  addCabinet('neon-drop-2048',      { x: 20.5, z: 0.0 },   -Math.PI / 2);
+  addCabinet('cyber-pinball-fx',    { x: 20.5, z: 5.0 },   -Math.PI / 2);
+  addCabinet('flappy-cyber-droid',  { x: 20.5, z: 10.0 },  -Math.PI / 2);
 
   return {
     roomBounds,
