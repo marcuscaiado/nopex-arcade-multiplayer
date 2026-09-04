@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { drawCRTAttract } from './gameplay-loops.js';
 
 // Vibrant neon theme presets for cabinets
 const CABINET_THEMES = [
@@ -60,206 +61,25 @@ function createMarqueeTexture(game, theme) {
 }
 
 /**
- * Creates animated CRT Screen Canvas Texture (512x512 with genre-specific attract loops)
+ * Creates animated CRT Screen Canvas Texture with authentic pixel-art gameplay attract loops!
  */
 function createScreenTexture(game, theme) {
   const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 512;
+  canvas.width = 256;
+  canvas.height = 224;
   const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
 
-  const cat = (game.category || '').toLowerCase();
-  const id = (game.id || '').toLowerCase();
-  const isRacer = cat === 'sports' || id.includes('gear') || id.includes('fzero') || id.includes('outrun') || id.includes('racer') || id.includes('runner');
-  const isFighter = cat === 'action' || id.includes('slug') || id.includes('fighter') || id.includes('mk2') || id.includes('sor2') || id.includes('shuriken') || id.includes('katana');
-  const isPacman = id.includes('pacman');
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.NearestFilter;
+  texture.magFilter = THREE.NearestFilter;
+  texture.generateMipmaps = false;
 
   const update = (time) => {
-    // 1. Dark CRT Cyber Background
-    ctx.fillStyle = '#060a1e';
-    ctx.fillRect(0, 0, 512, 512);
-
-    // 2. Genre-Specific Gameplay Attract Loop
-    if (isRacer) {
-      // Perspective Retro Horizon & Moving Road
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, 260);
-      skyGrad.addColorStop(0, '#0d0826');
-      skyGrad.addColorStop(1, '#3b1443');
-      ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, 0, 512, 260);
-
-      // Distant neon mountains
-      ctx.fillStyle = '#ff007f';
-      ctx.beginPath();
-      ctx.moveTo(0, 260);
-      ctx.lineTo(80, 210);
-      ctx.lineTo(160, 260);
-      ctx.lineTo(260, 190);
-      ctx.lineTo(370, 260);
-      ctx.lineTo(440, 220);
-      ctx.lineTo(512, 260);
-      ctx.fill();
-
-      // Road ground
-      ctx.fillStyle = '#111322';
-      ctx.fillRect(0, 260, 512, 252);
-
-      // Scrolling road stripes
-      const roadSpeed = time * 260;
-      for (let i = 0; i < 7; i++) {
-        const p = ((i * 38 + roadSpeed) % 252);
-        const y = 260 + p;
-        const w = 40 + (p / 252) * 220;
-        ctx.fillStyle = (Math.floor((p + roadSpeed * 0.2) / 36) % 2 === 0) ? '#ff007f' : '#00f5ff';
-        ctx.fillRect(256 - w / 2, y, w, 8 + (p / 252) * 8);
-      }
-
-      // Mini player car sprite
-      ctx.fillStyle = '#ffd32a';
-      ctx.shadowColor = '#ffd32a';
-      ctx.shadowBlur = 12;
-      const carX = 256 + Math.sin(time * 3) * 60;
-      ctx.fillRect(carX - 22, 430, 44, 24);
-      ctx.fillStyle = '#ff007f';
-      ctx.fillRect(carX - 16, 444, 32, 8);
-      ctx.shadowBlur = 0;
-    } else if (isFighter) {
-      // Fighting Arena Background with HP Bars & Ready Pulse
-      ctx.strokeStyle = 'rgba(255, 0, 127, 0.25)';
-      ctx.lineWidth = 2;
-      for (let x = 0; x < 512; x += 40) {
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke();
-      }
-
-      // Simulated Fighter Health Bars
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-      ctx.fillRect(30, 80, 200, 20);
-      ctx.fillRect(282, 80, 200, 20);
-
-      const hp1 = 190 - (Math.sin(time * 2) * 0.5 + 0.5) * 60;
-      const hp2 = 190 - (Math.cos(time * 2.5) * 0.5 + 0.5) * 80;
-      ctx.fillStyle = '#05ffa1';
-      ctx.fillRect(35, 84, hp1, 12);
-      ctx.fillStyle = '#ff007f';
-      ctx.fillRect(287, 84, hp2, 12);
-
-      // Center "VS" or "FIGHT!"
-      ctx.font = 'bold 22px "Press Start 2P", monospace';
-      ctx.fillStyle = '#ffd32a';
-      ctx.textAlign = 'center';
-      ctx.shadowColor = '#ffd32a';
-      ctx.shadowBlur = 10;
-      ctx.fillText(Math.floor(time * 3) % 2 === 0 ? 'FIGHT!' : 'VS', 256, 96);
-      ctx.shadowBlur = 0;
-    } else if (isPacman) {
-      // Pac-Man Maze Attract Loop
-      ctx.strokeStyle = '#0066ff';
-      ctx.lineWidth = 4;
-      ctx.strokeRect(50, 80, 412, 140);
-      ctx.strokeRect(100, 120, 120, 60);
-      ctx.strokeRect(292, 120, 120, 60);
-
-      // Dots
-      ctx.fillStyle = '#ffb8ae';
-      for (let dx = 80; dx <= 430; dx += 32) {
-        ctx.beginPath();
-        ctx.arc(dx, 100, 4, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // Animated Pac-Man chomping
-      const pacX = 70 + ((time * 90) % 360);
-      const chomp = (Math.sin(time * 18) * 0.5 + 0.5) * 0.35;
-      ctx.fillStyle = '#ffd32a';
-      ctx.beginPath();
-      ctx.arc(pacX, 100, 16, chomp * Math.PI, (2 - chomp) * Math.PI);
-      ctx.lineTo(pacX, 100);
-      ctx.fill();
-    } else {
-      // Default Neon Synth Grid Matrix
-      ctx.strokeStyle = 'rgba(0, 245, 255, 0.2)';
-      ctx.lineWidth = 2;
-      const gridOffset = (time * 30) % 32;
-      for (let y = gridOffset; y < 512; y += 32) {
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke();
-      }
-      for (let x = 0; x < 512; x += 32) {
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke();
-      }
-    }
-
-    // 3. Header Badge
-    ctx.fillStyle = 'rgba(255, 0, 127, 0.4)';
-    ctx.fillRect(100, 24, 312, 34);
-    ctx.strokeStyle = '#ff007f';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(100, 24, 312, 34);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 15px "Press Start 2P", monospace, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('★ ARCADE CLASSIC ★', 256, 41);
-
-    // 4. Central Pulsing Game Icon (Y = 185)
-    const scale = 1.0 + Math.sin(time * 4) * 0.1;
-    ctx.save();
-    ctx.translate(256, 185);
-    ctx.scale(scale, scale);
-    ctx.font = '72px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = '#' + theme.primary.toString(16).padStart(6, '0');
-    ctx.shadowBlur = 24;
-    ctx.fillText(game.icon || '🎮', 0, 0);
-    ctx.restore();
-
-    // 5. Game Title (Centered at Y = 280)
-    ctx.font = 'bold 27px "Outfit", Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = '#' + theme.primary.toString(16).padStart(6, '0');
-    ctx.shadowBlur = 16;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText((game.name || 'ARCADE GAME').toUpperCase(), 256, 280);
-
-    // 6. Category Tag (Centered at Y = 325)
-    ctx.font = 'bold 15px monospace';
-    ctx.fillStyle = '#ffd32a';
-    ctx.shadowColor = '#ffd32a';
-    ctx.shadowBlur = 8;
-    ctx.fillText(`• ${(game.category || 'ACTION').toUpperCase()} • 60 FPS •`, 256, 325);
-
-    // 7. Flashing "INSERT COIN [SPACE]" Prompt (Centered at Y = 405)
-    if (Math.floor(time * 2.8) % 2 === 0) {
-      ctx.fillStyle = '#' + theme.primary.toString(16).padStart(6, '0');
-      ctx.font = 'bold 22px monospace';
-      ctx.shadowColor = '#' + theme.accent.toString(16).padStart(6, '0');
-      ctx.shadowBlur = 16;
-      ctx.fillText('▶ PRESS [ENTER] TO PLAY ◀', 256, 405);
-
-      ctx.font = '14px monospace';
-      ctx.fillStyle = '#94a3b8';
-      ctx.shadowBlur = 0;
-      ctx.fillText('INSERT 1 COIN (25¢)', 256, 436);
-    }
-
-    // 8. CRT Phosphor Scanlines
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
-    for (let y = 0; y < 512; y += 4) {
-      ctx.fillRect(0, y, 512, 2);
-    }
-
-    // 9. CRT Glass Bezel Border
-    ctx.strokeStyle = '#' + theme.primary.toString(16).padStart(6, '0');
-    ctx.lineWidth = 8;
-    ctx.strokeRect(4, 4, 504, 504);
-
+    drawCRTAttract(ctx, game, time, 256, 224);
     texture.needsUpdate = true;
   };
 
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.minFilter = THREE.LinearFilter;
   update(0);
   return { texture, update };
 }
@@ -556,7 +376,7 @@ export function createArcadeCabinet(game, position, rotationY = 0) {
         updateScreenTex(time);
         floorGlow.material.opacity = 0.7 + Math.sin(time * 6.0) * 0.25;
       } else {
-        const frame = Math.floor(time * 12); // Smooth 12 FPS CRT attract loop when nearby
+        const frame = Math.floor(time * 24); // Smooth 24 FPS authentic pixel attract loop when nearby
         if (this._lastFrame !== frame) {
           this._lastFrame = frame;
           updateScreenTex(time);
