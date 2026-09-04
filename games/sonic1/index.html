@@ -236,6 +236,20 @@
   </div>
 
   <script>
+    
+    // Universal Escape listener to leave game immediately
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' || e.code === 'Escape' || e.keyCode === 27) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'CLOSE_ARCADE_GAME' }, '*');
+        } else {
+          window.history.back();
+        }
+      }
+    }, true);
+
     // Back Button (supports iframe parent postMessage & standalone)
     document.getElementById('btn-back').addEventListener('click', () => {
       if (window.parent && window.parent !== window) {
