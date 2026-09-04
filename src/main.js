@@ -24,6 +24,7 @@ function initNopexArcade() {
         engine = new Arcade3DEngine(container, ARCADE_GAMES, identity);
         engine.start();
         window.__ARCADE_ENGINE__ = engine;
+        window.__arcadeEngine = engine;
         window.__MUSIC_MANAGER__ = musicManager;
 
         // Ambient Jukebox Auto-start on player action
