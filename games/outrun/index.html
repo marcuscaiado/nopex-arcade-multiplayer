@@ -35,6 +35,16 @@
       height: 100%;
     }
 
+    #game canvas {
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+      image-rendering: pixelated;
+      transform: translateZ(0);
+      backface-visibility: hidden;
+      width: 100%;
+      height: 100%;
+    }
+
     /* Floating Header Overlay */
     .floating-bar {
       position: absolute;
@@ -252,37 +262,69 @@
       }
     });
 
-    // Autofocus canvas on click or touch
+            // Autofocus canvas on click or touch & auto-resume audio context
+    const resumeAudio = () => {
+      try {
+        const alCtx = window.EJS_emulator?.Module?.AL?.currentCtx;
+        if (alCtx?.audioCtx?.state === 'suspended') {
+          alCtx.audioCtx.resume();
+        }
+      } catch (e) {}
+    };
     window.addEventListener('click', () => {
       const c = document.querySelector('canvas');
       if (c) c.focus();
+      resumeAudio();
     });
     window.addEventListener('touchstart', () => {
       const c = document.querySelector('canvas');
       if (c) c.focus();
+      resumeAudio();
     }, { passive: true });
+    window.addEventListener('keydown', resumeAudio);
 
-    // Listen for parent arcade keyboard forwarding
-    window.addEventListener('message', (e) => {
-      if (e.data && e.data.type === 'ARCADE_KEY_DOWN') {
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: e.data.key, code: e.data.code, bubbles: true }));
-      } else if (e.data && e.data.type === 'ARCADE_KEY_UP') {
-        window.dispatchEvent(new KeyboardEvent('keyup', { key: e.data.key, code: e.data.code, bubbles: true }));
-      }
-    });
-
-    // EmulatorJS Engine Config: Heavily tuned for potato PCs and cheap smartphones
+    // EmulatorJS Ultra-Performance Configuration
     window.EJS_player = '#game';
     window.EJS_core = 'segaMD';
-    window.EJS_gameName = 'OUTRUN (SEGA)';
-    window.EJS_color = '#ff007f';
+    window.EJS_gameName = 'OUTRUN (MEGA DRIVE)';
+    window.EJS_color = '#e17055';
     window.EJS_startOnLoaded = true;
-    window.EJS_threads = false;      // Disable multi-threading overhead and avoid COOP/COEP isolation lock
-    window.EJS_shaders = false;      // Zero heavy GPU shaders for rock-solid 60 FPS
+    window.EJS_threads = false;      // Single-threaded WASM avoids COOP/COEP isolation locks
+    window.EJS_shaders = false;      // Zero shader overhead for max frame stability
+    window.EJS_disableLocalStorage = true; // Forces coreSettings to always write defaultOptions
+    window.EJS_disableDatabases = true;    // Avoids heavy IndexedDB scanning overhead
+    window.EJS_screenCapture = false;      // Avoids background canvas readbacks
+    window.EJS_disableCue = true;
     window.EJS_defaultOptions = {
-      "snes9x_audio_interpolation": "none",
-      "snes9x_overclock_cycles": "disabled"
+      "webgl2Enabled": "enabled",
+      "vsync": "enabled",
+      "genesis_plus_gx_overclock": "125%",
+      "genesis_plus_gx_audio_filter": "disabled",
+      "genesis_plus_gx_lowpass_range": "60",
+      "genesis_plus_gx_bpc": "24",
+      "genesis_plus_gx_aspect": "4:3",
+      "genesis_plus_gx_render": "single field"
+};
+
+    // RetroArch audio & frame synchronization tuning to eliminate buffer starvation and micro-freezes
+    window.EJS_ready = () => {
+      const gm = window.EJS_emulator?.gameManager;
+      if (gm && gm.FS) {
+        try {
+          const path = '/home/web_user/.config/retroarch/retroarch.cfg';
+          let cfg = gm.FS.readFile(path, { encoding: 'utf8' });
+          cfg += 'audio_latency = 128\n';
+          cfg += 'audio_sync = true\n';
+          cfg += 'audio_rate_control = true\n';
+          cfg += 'audio_rate_control_delta = 0.05\n';
+          cfg += 'video_vsync = true\n';
+          cfg += 'video_frame_delay = 0\n';
+          cfg += 'video_smooth = false\n';
+          gm.FS.writeFile(path, cfg);
+        } catch (e) {}
+      }
     };
+
     window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
     window.EJS_gameUrl = 'roms/outrun.bin';
   </script>
