@@ -68,11 +68,11 @@
     },
     {
       "id": "namco-sound-team",
-      "name": "Namco & Toshio Kai",
+      "name": "Namco & Buckner & Garcia",
       "genre": "Golden Age Arcade & Chiptune",
       "verified": true,
       "monthlyListeners": "15,200,000",
-      "bio": "The immortal sound design of Pac-Man, Galaga, and Dig Dug. Created the most recognizable sounds in video game history.",
+      "bio": "The immortal sound design of Pac-Man by Toshio Kai, paired with Buckner & Garcia's 1981 Gold smash hit single 'Pac-Man Fever'.",
       "avatar": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=400&q=80",
       "banner": "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80",
       "accentColor": "#ffd32a"
@@ -531,47 +531,76 @@
       ]
     },
     {
-      "id": "trk-pacman-classic",
+      "id": "trk-pacman-fever",
       "artistId": "namco-sound-team",
-      "artistName": "Namco & Toshio Kai",
-      "title": "Pac-Man Arcade Theme",
-      "album": "Pac-Man (Original 1980 Arcade OST)",
+      "artistName": "Buckner & Garcia (Namco)",
+      "title": "Pac-Man Fever (Official 1981)",
+      "album": "Pac-Man Fever (Gold Album 1981)",
       "game": "Pac-Man",
-      "duration": "1:48",
-      "durationSec": 108,
-      "bpm": 128,
-      "plays": "24,800,000",
+      "duration": "3:46",
+      "durationSec": 226,
+      "bpm": 132,
+      "plays": "28,400,000",
       "cover": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80",
-      "audioUrl": "music/audio/pacman-classic-theme.m4a",
-      "genre": "Golden Age Arcade / Chiptune",
+      "audioUrl": "music/audio/pacman-fever.mp3",
+      "genre": "Golden Age Arcade / Pop Rock",
       "lyrics": [
         {
           "time": 0,
-          "text": "♪ (Iconic 1980 Pac-Man Startup Jingles) ♪"
+          "text": "♪ (Coin Drop & Authentic 1980 Toshio Kai Pac-Man Intro) ♪"
         },
         {
-          "time": 6,
-          "text": "WAKA WAKA WAKA WAKA WAKA!"
+          "time": 8,
+          "text": "I got a pocket full of quarters and I'm headed to the arcade!"
         },
         {
-          "time": 18,
-          "text": "SIREN LOOP: Blinky, Pinky, Inky & Clyde on the prowl!"
+          "time": 25,
+          "text": "I got Pac-Man Fever! It's drivin' me crazy!"
         },
         {
-          "time": 35,
-          "text": "POWER PELLET ENERGIZED! BLUE GHOSTS RETREAT!"
+          "time": 45,
+          "text": "WAKA WAKA WAKA! Power Pellets and Blue Ghosts!"
         },
         {
-          "time": 50,
-          "text": "NOM NOM NOM! 200... 400... 800... 1600 PTS!"
+          "time": 85,
+          "text": "Pattern memorized, chasing the fruit bonus!"
         },
         {
-          "time": 72,
-          "text": "COFFEE BREAK INTERMISSION: Giant Pac-Man chases Blinky!"
+          "time": 120,
+          "text": "I got Pac-Man Fever, it's drivin' me crazy!"
+        }
+      ]
+    },
+    {
+      "id": "trk-pacman-powerpill",
+      "artistId": "namco-sound-team",
+      "artistName": "Power-Pill (Aphex Twin)",
+      "title": "Pac-Man (Original 1992 Rave Edit)",
+      "album": "PAC-MAN (1992 UK Chart Hit)",
+      "game": "Pac-Man",
+      "duration": "3:29",
+      "durationSec": 209,
+      "bpm": 140,
+      "plays": "14,200,000",
+      "cover": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80",
+      "audioUrl": "music/audio/pacman-powerpill.mp3",
+      "genre": "90s Rave / Chiptune Techno",
+      "lyrics": [
+        {
+          "time": 0,
+          "text": "♪ (Authentic 1980 Arcade Pac-Man Opening Theme) ♪"
         },
         {
-          "time": 95,
-          "text": "CHERRY BONUS! PERFECT MAZE CLEAR!"
+          "time": 15,
+          "text": "♪ (Waka Waka 909 Beat Drop) ♪"
+        },
+        {
+          "time": 45,
+          "text": "SIREN LOOP & POWER PELLET MADNESS!"
+        },
+        {
+          "time": 90,
+          "text": "♪ (High Speed Chiptune Acid Rave) ♪"
         }
       ]
     }
