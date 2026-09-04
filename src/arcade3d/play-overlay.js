@@ -14,9 +14,15 @@ export class ArcadePlayOverlay {
     this.isOpen = false;
     this.activeGame = null;
     this.currentStream = null;
-    this._streamPollTimer = null;
+    this._frameInterval = null;
+    this._captureCanvas = null;
+    this._captureCtx = null;
+    this._captureVideo = null;
+    this._currentCanvas = null;
     this.onStreamReady = null; // (stream, gameId) => void
     this.onStreamEnded = null; // (gameId) => void
+    this.onFrameReady = null;  // (frameDataUrl, gameId) => void
+    this.onFrameEnded = null;  // (gameId) => void
 
     this.bindEvents();
   }
@@ -136,8 +142,8 @@ export class ArcadePlayOverlay {
       setTimeout(() => this.attachIframeEscape(), 600);
       setTimeout(() => this.attachIframeEscape(), 1500);
 
-      // Start stream capture monitoring for WebRTC watch party
-      this.startStreamMonitoring(game.id);
+      // Start stream capture & continuous frame broadcasting for Watch Party
+      this.startFrameBroadcasting(game.id);
     }
 
     if (this.overlay) {
@@ -155,49 +161,86 @@ export class ArcadePlayOverlay {
     }
   }
 
-  captureGameStream() {
-    if (!this.iframe) return null;
-    try {
-      const doc = this.iframe.contentDocument || this.iframe.contentWindow?.document;
-      if (!doc) return null;
-      const canvas = doc.querySelector('canvas');
-      if (canvas && typeof canvas.captureStream === 'function') {
-        return canvas.captureStream(24); // 24 FPS stream
-      }
-    } catch (e) {
-      // Cross-origin restriction (expected for non-local iframes)
+  startFrameBroadcasting(gameId) {
+    if (this._frameInterval) {
+      clearInterval(this._frameInterval);
+      this._frameInterval = null;
     }
-    return null;
-  }
 
-  startStreamMonitoring(gameId) {
-    if (this._streamPollTimer) clearInterval(this._streamPollTimer);
+    if (!this._captureCanvas) {
+      this._captureCanvas = document.createElement('canvas');
+      this._captureCanvas.width = 256;
+      this._captureCanvas.height = 192;
+      this._captureCtx = this._captureCanvas.getContext('2d', { alpha: false });
+    }
 
-    let attempts = 0;
-    const maxAttempts = 15; // Poll every 400ms for up to 6 seconds while game boots
+    let streamNotified = false;
 
-    this._streamPollTimer = setInterval(() => {
-      attempts++;
-      if (!this.isOpen) {
-        clearInterval(this._streamPollTimer);
-        this._streamPollTimer = null;
+    // Stream frames at ~11 FPS (every 90ms)
+    this._frameInterval = setInterval(() => {
+      if (!this.isOpen || !this.iframe) {
+        if (this._frameInterval) {
+          clearInterval(this._frameInterval);
+          this._frameInterval = null;
+        }
         return;
       }
 
-      const stream = this.captureGameStream();
-      if (stream) {
-        clearInterval(this._streamPollTimer);
-        this._streamPollTimer = null;
-        this.currentStream = stream;
-        console.log(`[Watch Party] Captured game stream for ${gameId} (${stream.getVideoTracks().length} video track)`);
-        if (this.onStreamReady) {
-          this.onStreamReady(stream, gameId);
+      try {
+        const doc = this.iframe.contentDocument || this.iframe.contentWindow?.document;
+        if (!doc) return;
+
+        // Find main game canvas (sort by area if multiple exist)
+        const canvases = Array.from(doc.querySelectorAll('canvas'));
+        if (canvases.length === 0) return;
+
+        let canvas = canvases[0];
+        if (canvases.length > 1) {
+          canvases.sort((a, b) => (b.width * b.height) - (a.width * a.height));
+          canvas = canvases[0];
         }
-      } else if (attempts >= maxAttempts) {
-        clearInterval(this._streamPollTimer);
-        this._streamPollTimer = null;
+
+        // Initialize capture video if captureStream is available
+        if (canvas !== this._currentCanvas) {
+          this._currentCanvas = canvas;
+          if (typeof canvas.captureStream === 'function') {
+            try {
+              const stream = canvas.captureStream(12);
+              this.currentStream = stream;
+              if (!this._captureVideo) {
+                this._captureVideo = document.createElement('video');
+                this._captureVideo.muted = true;
+                this._captureVideo.playsInline = true;
+                this._captureVideo.autoplay = true;
+              }
+              this._captureVideo.srcObject = stream;
+              this._captureVideo.play().catch(() => {});
+
+              if (!streamNotified && this.onStreamReady) {
+                streamNotified = true;
+                this.onStreamReady(stream, gameId);
+              }
+            } catch (e) {}
+          }
+        }
+
+        // Choose frame source: video compositor if active, otherwise direct canvas
+        let source = canvas;
+        if (this._captureVideo && this._captureVideo.videoWidth > 0 && !this._captureVideo.paused) {
+          source = this._captureVideo;
+        }
+
+        if (source && (source.videoWidth > 0 || source.width > 0)) {
+          this._captureCtx.drawImage(source, 0, 0, 256, 192);
+          const frameData = this._captureCanvas.toDataURL('image/webp', 0.42);
+          if (this.onFrameReady && frameData && frameData.length > 50) {
+            this.onFrameReady(frameData, gameId);
+          }
+        }
+      } catch (err) {
+        // Cross-origin restriction or temporary canvas busy
       }
-    }, 400);
+    }, 90);
   }
 
   close() {
@@ -206,19 +249,35 @@ export class ArcadePlayOverlay {
     this.isOpen = false;
     window.__arcadeOverlayOpen = false;
 
-    // Stop stream polling and active media stream tracks
-    if (this._streamPollTimer) {
-      clearInterval(this._streamPollTimer);
-      this._streamPollTimer = null;
+    // Stop continuous frame broadcasting
+    if (this._frameInterval) {
+      clearInterval(this._frameInterval);
+      this._frameInterval = null;
     }
+
+    if (this._captureVideo) {
+      try {
+        if (this._captureVideo.srcObject) {
+          this._captureVideo.srcObject.getTracks().forEach(t => t.stop());
+        }
+        this._captureVideo.pause();
+        this._captureVideo.srcObject = null;
+      } catch (e) {}
+    }
+    this._currentCanvas = null;
+
     if (this.currentStream) {
       try {
         this.currentStream.getTracks().forEach(track => track.stop());
       } catch (e) {}
       this.currentStream = null;
     }
+
     if (this.onStreamEnded && closingGameId) {
       this.onStreamEnded(closingGameId);
+    }
+    if (this.onFrameEnded && closingGameId) {
+      this.onFrameEnded(closingGameId);
     }
 
     // Immediately exit fullscreen if active

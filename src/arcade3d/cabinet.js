@@ -81,7 +81,7 @@ function createScreenTexture(game, theme) {
   };
 
   update(0);
-  return { texture, update };
+  return { texture, update, canvas, ctx };
 }
 
 /**
@@ -274,7 +274,7 @@ export function createArcadeCabinet(game, position, rotationY = 0) {
   group.add(bezelMesh);
 
   // CRT Canvas Screen (Unlit MeshBasicMaterial for 100% brightness)
-  const { texture: screenTex, update: updateScreenTex } = createScreenTexture(game, theme);
+  const { texture: screenTex, update: updateScreenTex, canvas: screenCanvas, ctx: screenCtx } = createScreenTexture(game, theme);
   const screenGeo = new THREE.PlaneGeometry(1.22, 0.88);
   const screenMat = new THREE.MeshBasicMaterial({ map: screenTex });
   const screenMesh = new THREE.Mesh(screenGeo, screenMat);
@@ -370,6 +370,46 @@ export function createArcadeCabinet(game, position, rotationY = 0) {
     isLiveStreaming: false,
     liveStreamTag: null,
     spectatorCount: 0,
+    _frameImg: null,
+    setLiveFrame(frameData, tag = 'PILOTO') {
+      if (!frameData) return;
+      this.isLiveStreaming = true;
+      this.liveStreamTag = tag;
+      this.occupiedBy = tag;
+      this.occupancyBadge.setPlayer(tag, true, this.spectatorCount);
+
+      if (!this._frameImg) {
+        this._frameImg = new Image();
+        this._frameImg.onload = () => {
+          screenCtx.fillStyle = '#050712';
+          screenCtx.fillRect(0, 0, 256, 224);
+
+          const iw = this._frameImg.width || 256;
+          const ih = this._frameImg.height || 192;
+          const hRatio = 256 / iw;
+          const vRatio = 224 / ih;
+          const ratio = Math.min(hRatio, vRatio);
+          const shiftX = (256 - iw * ratio) / 2;
+          const shiftY = (224 - ih * ratio) / 2;
+
+          screenCtx.drawImage(this._frameImg, 0, 0, iw, ih, shiftX, shiftY, iw * ratio, ih * ratio);
+
+          // CRT phosphor scanline effect
+          screenCtx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+          for (let y = 0; y < 224; y += 4) {
+            screenCtx.fillRect(0, y, 256, 1);
+          }
+          screenTex.needsUpdate = true;
+        };
+      }
+
+      this._frameImg.src = frameData;
+
+      if (this.screenMesh.material.map !== screenTex) {
+        this.screenMesh.material.map = screenTex;
+        this.screenMesh.material.needsUpdate = true;
+      }
+    },
     setLiveStream(mediaStream, tag = 'PILOTO') {
       if (!mediaStream) return;
       this.isLiveStreaming = true;

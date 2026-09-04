@@ -15,14 +15,18 @@ export class ArcadeNetwork {
     this.actAction = null;
     this.scoreAction = null;
     this.chatAction = null;
+    this.frameAction = null;
     this.onCabinetOccupancyChange = null;
 
-    // Watch Party & MediaStream properties
+    // Watch Party & MediaStream / Frame properties
     this.activeLocalStream = null;
     this.activeStreamingGameId = null;
     this.activeRemoteStreams = new Map(); // gameId -> { peerId, pilotTag, stream }
     this.onRemoteGameStream = null; // (gameId, pilotTag, stream, peerId) => void
     this.onRemoteGameStreamEnded = null; // (gameId, peerId) => void
+    this.onRemoteGameFrame = null; // (gameId, pilotTag, frameData, peerId) => void
+    this.onRemoteGameFrameEnded = null; // (gameId, peerId) => void
+    this.lastSentFrameTime = 0;
 
     // Rate limiting & dead reckoning telemetry variables
     this.lastBroadcastTime = 0;
@@ -132,6 +136,7 @@ export class ArcadeNetwork {
       this.actAction = wrapAction(this.room.makeAction('act'));
       this.scoreAction = wrapAction(this.room.makeAction('score'));
       this.chatAction = wrapAction(this.room.makeAction('chat'));
+      this.frameAction = wrapAction(this.room.makeAction('vframe'));
 
       // 2. Peer Handshakes & Media Streams
       this.room.onPeerJoin = (peerId) => {
@@ -143,7 +148,16 @@ export class ArcadeNetwork {
             colorHex: this.identity.colorHex
           }, { target: peerId });
         }
-        // If we are currently streaming gameplay, add this peer to our stream!
+        // If we are currently streaming gameplay, inform newly joined peer!
+        if (this.activeStreamingGameId && this.actAction) {
+          this.actAction.send({
+            status: 'PLAYING',
+            gameId: this.activeStreamingGameId,
+            playing: true,
+            tag: this.identity ? this.identity.tag : 'PILOTO',
+            isLiveStream: true
+          }, { target: peerId });
+        }
         if (this.activeLocalStream && this.room.addStream) {
           try {
             this.room.addStream(this.activeLocalStream, peerId, {
@@ -174,6 +188,10 @@ export class ArcadeNetwork {
               this.onRemoteGameStreamEnded(gameId, peerId);
             }
           }
+        }
+
+        if (this.onRemoteGameFrameEnded) {
+          this.onRemoteGameFrameEnded(null, peerId);
         }
 
         if (this.onCabinetOccupancyChange) {
@@ -270,6 +288,27 @@ export class ArcadeNetwork {
               this.onRemoteGameStreamEnded(data.gameId, peerId);
             }
           }
+          if (this.onRemoteGameFrameEnded) {
+            this.onRemoteGameFrameEnded(data.gameId, peerId);
+          }
+        }
+      };
+
+      // 5b. Receive Live Game Frame Stream (Ultra-fast DataChannel fallback / primary)
+      this.frameAction.onMessage = (data, { peerId }) => {
+        if (!data || !data.g) return;
+        const gameId = data.g;
+        const tag = data.t || (this.peers.get(peerId)?.tag) || 'PILOTO';
+
+        if (data.end) {
+          if (this.onRemoteGameFrameEnded) {
+            this.onRemoteGameFrameEnded(gameId, peerId);
+          }
+          return;
+        }
+
+        if (data.f && this.onRemoteGameFrame) {
+          this.onRemoteGameFrame(gameId, tag, data.f, peerId);
         }
       };
 
@@ -401,6 +440,23 @@ export class ArcadeNetwork {
     }
   }
 
+  broadcastLiveFrame(gameId, frameData) {
+    if (!this.frameAction || !frameData) return;
+    const now = performance.now();
+    // Cap transmission at ~12 FPS (80ms minimum gap) to conserve bandwidth
+    if (now - this.lastSentFrameTime < 80) return;
+    this.lastSentFrameTime = now;
+
+    this.activeStreamingGameId = gameId;
+    const tag = this.identity ? this.identity.tag : 'PILOTO';
+
+    this.frameAction.send({
+      g: gameId,
+      t: tag,
+      f: frameData
+    });
+  }
+
   stopBroadcastingGame() {
     const gameId = this.activeStreamingGameId;
     if (this.activeLocalStream && this.room && typeof this.room.removeStream === 'function') {
@@ -413,6 +469,13 @@ export class ArcadeNetwork {
 
     this.activeLocalStream = null;
     this.activeStreamingGameId = null;
+
+    if (this.frameAction && gameId) {
+      this.frameAction.send({
+        g: gameId,
+        end: true
+      });
+    }
 
     if (this.actAction && gameId) {
       this.actAction.send({

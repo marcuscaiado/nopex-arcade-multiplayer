@@ -165,6 +165,27 @@ export class Arcade3DEngine {
       }
     };
 
+    this.overlay.onFrameReady = (frameData, gameId) => {
+      if (this.network) {
+        this.network.broadcastLiveFrame(gameId, frameData);
+      }
+      const localCab = this.world.cabinets.find(c => c.game.id === gameId);
+      if (localCab) {
+        localCab.setLiveFrame(frameData, this.identity ? this.identity.tag : 'VOCÊ');
+      }
+    };
+
+    this.overlay.onFrameEnded = (gameId) => {
+      console.log(`[Watch Party] Ending local frame stream for ${gameId}`);
+      if (this.network) {
+        this.network.stopBroadcastingGame();
+      }
+      const localCab = this.world.cabinets.find(c => c.game.id === gameId);
+      if (localCab) {
+        localCab.clearLiveStream();
+      }
+    };
+
     this.overlay.onStreamEnded = (gameId) => {
       console.log(`[Watch Party] Ending local stream for ${gameId}`);
       if (this.network) {
@@ -298,6 +319,40 @@ export class Arcade3DEngine {
       }
       if (this.isSpectating && this.spectateTarget === cab) {
         this.stopSpectating();
+      }
+    };
+
+    this.network.onRemoteGameFrame = (gameId, pilotTag, frameData, peerId) => {
+      const cab = this.world.cabinets.find(c => c.game.id === gameId);
+      if (cab) {
+        cab.setLiveFrame(frameData, pilotTag);
+        if (this.isSpectating && this.spectateTarget === cab && this.watchHud) {
+          if (!this.watchHud.isOpen) {
+            this.watchHud.show(cab, 1);
+          }
+        }
+      }
+    };
+
+    this.network.onRemoteGameFrameEnded = (gameId, peerId) => {
+      console.log(`[Watch Party] Remote frame stream ended for ${gameId}`);
+      if (gameId) {
+        const cab = this.world.cabinets.find(c => c.game.id === gameId);
+        if (cab) {
+          cab.clearLiveStream();
+        }
+        if (this.isSpectating && this.spectateTarget === cab) {
+          this.stopSpectating();
+        }
+      } else {
+        this.world.cabinets.forEach(cab => {
+          if (cab.isLiveStreaming) {
+            cab.clearLiveStream();
+            if (this.isSpectating && this.spectateTarget === cab) {
+              this.stopSpectating();
+            }
+          }
+        });
       }
     };
   }
@@ -811,13 +866,13 @@ export class Arcade3DEngine {
       const rightZ = -Math.sin(rotY);
 
       // Cinematic over-the-shoulder camera position framing the CRT screen:
-      // ~2.15m distance from cabinet along forward line
-      // ~2.05m eye level height with organic subtle breathing
-      // ~0.38m lateral right offset framing the cabinet
+      // ~2.0m distance from cabinet along forward line
+      // ~2.18m eye level height with organic subtle breathing
+      // ~0.28m lateral right offset framing the cabinet
       const targetCamPos = new THREE.Vector3(
-        cab.position.x + fwdX * 2.15 + rightX * 0.38,
-        2.05 + Math.sin(time * 1.8) * 0.012,
-        cab.position.z + fwdZ * 2.15 + rightZ * 0.38
+        cab.position.x + fwdX * 2.0 + rightX * 0.28,
+        2.18 + Math.sin(time * 1.8) * 0.012,
+        cab.position.z + fwdZ * 2.0 + rightZ * 0.28
       );
 
       this.camera.position.lerp(targetCamPos, 0.12);
