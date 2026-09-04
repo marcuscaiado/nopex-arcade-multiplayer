@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>⚡ OUTRUN ⚡ | Nopex Arcade</title>
+  <meta name="description" content="Dirija a Ferrari Testarossa ao som de Magical Sound Shower pelas praias ensolaradas!">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: #000;
+      color: #fff;
+      overflow: hidden;
+      font-family: 'Outfit', sans-serif;
+      touch-action: manipulation;
+    }
+
+    #game-holder {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #game {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Floating Header Overlay */
+    .floating-bar {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 10000;
+      pointer-events: none;
+    }
+
+    .floating-bar button,
+    .floating-bar a {
+      pointer-events: auto;
+    }
+
+    .pill-btn {
+      background: rgba(10, 14, 28, 0.88);
+      border: 1px solid #ff007f;
+      backdrop-filter: blur(10px);
+      padding: 6px 14px;
+      border-radius: 20px;
+      color: #ff007f;
+      font-weight: 800;
+      font-size: 11px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .pill-btn:hover {
+      background: #ff007f;
+      color: #000;
+      box-shadow: 0 0 15px #ff007f;
+    }
+
+    .floating-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 11px;
+      color: #ffd32a;
+      background: rgba(10, 14, 28, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      padding: 6px 14px;
+      border-radius: 20px;
+      text-shadow: 0 0 10px rgba(255, 211, 42, 0.6);
+    }
+
+    .floating-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Controls Modal */
+    #controls-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 7, 20, 0.85);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 20000;
+    }
+
+    .modal-box {
+      background: #0d122b;
+      border: 2px solid #ff007f;
+      border-radius: 12px;
+      padding: 22px 26px;
+      max-width: 480px;
+      width: 92%;
+      box-shadow: 0 0 35px rgba(255, 0, 127, 0.4);
+    }
+
+    .modal-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 12px;
+      color: #ffd32a;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+      font-size: 12px;
+    }
+
+    .ctrl-item {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .key-badge {
+      background: #ff007f;
+      color: #000;
+      font-weight: 900;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .modal-tip {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-bottom: 16px;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .modal-close-btn {
+      width: 100%;
+      background: #ff007f;
+      color: #000;
+      font-weight: 900;
+      font-size: 13px;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .modal-close-btn:hover {
+      background: #fff;
+      color: #000;
+      box-shadow: 0 0 15px #fff;
+    }
+
+    @media (max-width: 600px) {
+      .floating-title { display: none; }
+      .pill-btn { padding: 5px 10px; font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Floating Top Bar -->
+  <div class="floating-bar">
+    <button id="btn-back" class="pill-btn" title="Voltar ao Fliperama 3D">
+      ⬅️ FLIPERAMA
+    </button>
+    <div class="floating-title">OUTRUN (SEGA)</div>
+    <div class="floating-actions">
+      <button id="btn-controls" class="pill-btn" title="Ver Controles">🎮 Controles</button>
+      <button id="btn-fullscreen" class="pill-btn" title="Tela Cheia">🔲</button>
+    </div>
+  </div>
+
+  <!-- Direct Emulator Mounting Node -->
+  <div id="game-holder">
+    <div id="game"></div>
+  </div>
+
+  <!-- Controls Modal -->
+  <div id="controls-modal">
+    <div class="modal-box">
+      <div class="modal-title">🎮 CONTROLES: OUTRUN (SEGA)</div>
+      <div class="controls-grid">
+        
+        <div class="ctrl-item"><span>Esterçar Carro</span> <span class="key-badge">Setas / D-Pad</span></div>
+  
+        <div class="ctrl-item"><span>Acelerador Máximo</span> <span class="key-badge">Z / B</span></div>
+  
+        <div class="ctrl-item"><span>Freio</span> <span class="key-badge">X / A</span></div>
+  
+        <div class="ctrl-item"><span>Câmbio Low / High</span> <span class="key-badge">C / Espaço</span></div>
+  
+        <div class="ctrl-item"><span>Start / Ficha</span> <span class="key-badge">Enter</span></div>
+  
+      </div>
+      <div class="modal-tip">
+        🕹️ <b>Controle Externo:</b> Conecte controle USB ou Bluetooth (Xbox, PS, 8BitDo) – detectado automaticamente!<br>
+        📱 <b>Celular / Touch:</b> D-Pad e botões touch na tela adaptados para celulares simples a 60 FPS fluído.
+      </div>
+      <button id="modal-close" class="modal-close-btn">FECHAR E JOGAR</button>
+    </div>
+  </div>
+
+  <script>
+    // Back Button (supports iframe parent postMessage & standalone)
+    document.getElementById('btn-back').addEventListener('click', () => {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'CLOSE_ARCADE_GAME' }, '*');
+      } else {
+        window.history.back();
+      }
+    });
+
+    // Controls modal
+    const modal = document.getElementById('controls-modal');
+    document.getElementById('btn-controls').addEventListener('click', () => modal.style.display = 'flex');
+    document.getElementById('modal-close').addEventListener('click', () => modal.style.display = 'none');
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+
+    // Fullscreen
+    document.getElementById('btn-fullscreen').addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    // Autofocus canvas on click or touch
+    window.addEventListener('click', () => {
+      const c = document.querySelector('canvas');
+      if (c) c.focus();
+    });
+    window.addEventListener('touchstart', () => {
+      const c = document.querySelector('canvas');
+      if (c) c.focus();
+    }, { passive: true });
+
+    // Listen for parent arcade keyboard forwarding
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'ARCADE_KEY_DOWN') {
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: e.data.key, code: e.data.code, bubbles: true }));
+      } else if (e.data && e.data.type === 'ARCADE_KEY_UP') {
+        window.dispatchEvent(new KeyboardEvent('keyup', { key: e.data.key, code: e.data.code, bubbles: true }));
+      }
+    });
+
+    // EmulatorJS Engine Config: Heavily tuned for potato PCs and cheap smartphones
+    window.EJS_player = '#game';
+    window.EJS_core = 'segaMD';
+    window.EJS_gameName = 'OUTRUN (SEGA)';
+    window.EJS_color = '#ff007f';
+    window.EJS_startOnLoaded = true;
+    window.EJS_threads = false;      // Disable multi-threading overhead and avoid COOP/COEP isolation lock
+    window.EJS_shaders = false;      // Zero heavy GPU shaders for rock-solid 60 FPS
+    window.EJS_defaultOptions = {
+      "snes9x_audio_interpolation": "none",
+      "snes9x_overclock_cycles": "disabled"
+    };
+    window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
+    window.EJS_gameUrl = 'roms/outrun.md';
+  </script>
+  <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
+</body>
+</html>
