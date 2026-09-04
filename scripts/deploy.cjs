@@ -22,7 +22,7 @@ console.log('📌 Committing updates to master branch...');
 execSync('git add -A', { stdio: 'inherit' });
 const masterStatus = execSync('git status -s', { encoding: 'utf8' }).trim();
 if (masterStatus) {
-    execSync('git commit -m "feat(controls-perf): add lobby jump [Space], cabinet entry [Enter]/[E], and 100% emulator performance boost"', { stdio: 'inherit' });
+    execSync('git commit -m "feat(music): Retro Arcade Jukebox with 15 classic game soundtracks and audio fix"', { stdio: 'inherit' });
   execSync('git push origin master', { stdio: 'inherit' });
 }
 
@@ -47,7 +47,7 @@ fs.writeFileSync('.gitignore', 'node_modules/\n.temp*\n');
 execSync('git add -A', { stdio: 'inherit' });
 const status = execSync('git status -s', { encoding: 'utf8' }).trim();
 if (status) {
-  execSync('git commit -m "deploy: 🚀 Nopex Arcade 3D Multiplayer release"', { stdio: 'inherit' });
+  execSync('git commit -m "deploy: 🚀 Retro Arcade Jukebox with 15 classic soundtracks"', { stdio: 'inherit' });
   execSync('git push origin gh-pages', { stdio: 'inherit' });
 }
 

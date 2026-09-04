@@ -2,6 +2,7 @@ import './style.css';
 import ARCADE_GAMES from './games-manifest.json';
 import { Arcade3DEngine } from './arcade3d/engine.js';
 import { IdentityManager } from './arcade3d/identity-modal.js';
+import { musicManager } from './arcade3d/music-manager.js';
 
 const GIST_RAW_URL = 'https://gist.githubusercontent.com/marcuscaiado/a238a8db5b064579413c7a54aba6c840/raw/marcus-arcade-leaderboard.json';
 
@@ -23,6 +24,15 @@ function initNopexArcade() {
         engine = new Arcade3DEngine(container, ARCADE_GAMES, identity);
         engine.start();
         window.__ARCADE_ENGINE__ = engine;
+
+        // Ambient Jukebox Auto-start on player action
+        const unlockAudio = () => {
+          musicManager.unlockAndPlay();
+        };
+        window.addEventListener('pointerdown', unlockAudio, { once: true });
+        window.addEventListener('keydown', unlockAudio, { once: true });
+        window.addEventListener('touchstart', unlockAudio, { once: true });
+        unlockAudio();
       } catch (err) {
         console.error('Fatal WebGL / Three.js Initialization Error:', err);
         if (errorBanner) {
