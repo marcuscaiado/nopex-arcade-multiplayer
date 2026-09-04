@@ -47,6 +47,18 @@ export class ArcadePlayOverlay {
         } else {
           this.close();
         }
+        return;
+      }
+
+      // Forward game controls to iframe if open so keyboard control works instantaneously
+      if (this.isOpen && this.iframe && this.iframe.contentWindow) {
+        const gameKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'W', 'a', 'A', 's', 'S', 'd', 'D', ' ', 'Enter'];
+        if (gameKeys.includes(e.key)) {
+          try {
+            this.iframe.contentWindow.postMessage({ type: 'ARCADE_KEY_DOWN', key: e.key, code: e.code }, '*');
+            this.iframe.contentWindow.dispatchEvent(new KeyboardEvent('keydown', { key: e.key, code: e.code, bubbles: true }));
+          } catch (err) {}
+        }
       }
     });
   }
@@ -65,13 +77,25 @@ export class ArcadePlayOverlay {
 
     if (this.iframe) {
       this.iframe.src = game.url;
+      this.iframe.onload = () => {
+        try {
+          this.iframe.focus();
+          if (this.iframe.contentWindow) this.iframe.contentWindow.focus();
+        } catch (err) {}
+      };
     }
 
     if (this.overlay) {
       this.overlay.style.display = 'flex';
       setTimeout(() => {
         this.overlay.classList.add('active');
-      }, 10);
+        try {
+          if (this.iframe) {
+            this.iframe.focus();
+            if (this.iframe.contentWindow) this.iframe.contentWindow.focus();
+          }
+        } catch (err) {}
+      }, 100);
     }
   }
 
