@@ -43,6 +43,7 @@ entries.forEach(entry => {
 copyFolderSync(tempDist, '.');
 fs.rmSync(tempDist, { recursive: true, force: true });
 fs.writeFileSync('.gitignore', 'node_modules/\n.temp*\n');
+fs.writeFileSync('.nojekyll', '');
 
 execSync('git add -A', { stdio: 'inherit' });
 const status = execSync('git status -s', { encoding: 'utf8' }).trim();
