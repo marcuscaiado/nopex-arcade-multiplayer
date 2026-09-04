@@ -103,6 +103,10 @@ export class ArcadePlayOverlay {
 
   open(game) {
     this.isOpen = true;
+    window.__arcadeOverlayOpen = true;
+    if (document.exitPointerLock) {
+      document.exitPointerLock();
+    }
     this.activeGame = game;
 
     // Play coin insert chime and duck background music
@@ -147,6 +151,7 @@ export class ArcadePlayOverlay {
   close() {
     if (!this.isOpen) return;
     this.isOpen = false;
+    window.__arcadeOverlayOpen = false;
 
     // Immediately exit fullscreen if active
     if (document.fullscreenElement) {

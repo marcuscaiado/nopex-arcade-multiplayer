@@ -14,6 +14,8 @@ export class ArcadeNetwork {
     this.idAction = null;
     this.actAction = null;
     this.scoreAction = null;
+    this.chatAction = null;
+    this.onCabinetOccupancyChange = null;
 
     // Rate limiting & dead reckoning telemetry variables
     this.lastBroadcastTime = 0;
@@ -103,6 +105,7 @@ export class ArcadeNetwork {
       this.idAction = this.room.makeAction('id');
       this.actAction = this.room.makeAction('act');
       this.scoreAction = this.room.makeAction('score');
+      this.chatAction = this.room.makeAction('chat');
 
       // 2. Peer Handshakes
       this.room.onPeerJoin = (peerId) => {
@@ -123,6 +126,9 @@ export class ArcadeNetwork {
         if (remote) {
           remote.dispose();
           this.peers.delete(peerId);
+        }
+        if (this.onCabinetOccupancyChange) {
+          this.onCabinetOccupancyChange(peerId, null, null, false);
         }
         this.updateHudCount();
       };
@@ -179,6 +185,10 @@ export class ArcadeNetwork {
         if (remote) {
           remote.setActivity(data.status || 'ONLINE');
         }
+        if (this.onCabinetOccupancyChange) {
+          const tag = (remote && remote.tag) || data.tag || 'P2';
+          this.onCabinetOccupancyChange(peerId, tag, data.gameId, !!data.playing);
+        }
       };
 
       // 6. Receive High Score Broadcast
@@ -189,7 +199,23 @@ export class ArcadeNetwork {
         }
       };
 
-      // 7. Periodic Presence Heartbeat (every 2.5s)
+      // 7. Receive Chat Messages (Speech bubble + Chat dock feed)
+      this.chatAction.onMessage = (data, { peerId }) => {
+        if (!data || !data.text) return;
+        const remote = this.peers.get(peerId);
+        const tag = data.tag || (remote ? remote.tag : 'P2');
+        const colorHex = data.colorHex || (remote ? remote.colorHex : '#00f5ff');
+
+        if (remote) {
+          remote.showSpeechBubble(data.text);
+        }
+
+        window.dispatchEvent(new CustomEvent('arcade-chat-received', {
+          detail: { peerId, tag, text: data.text, colorHex }
+        }));
+      };
+
+      // 8. Periodic Presence Heartbeat (every 2.5s)
       // Ensures newly joined peers are detected within 2 seconds without requiring refresh
       if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = setInterval(() => {
@@ -249,6 +275,25 @@ export class ArcadeNetwork {
   broadcastActivity(statusText) {
     if (!this.actAction) return;
     this.actAction.send({ status: statusText });
+  }
+
+  broadcastPlayingGame(gameId, isPlaying) {
+    if (!this.actAction) return;
+    this.actAction.send({
+      status: isPlaying ? 'PLAYING' : 'ONLINE',
+      gameId: gameId || null,
+      playing: !!isPlaying,
+      tag: this.identity ? this.identity.tag : 'P1'
+    });
+  }
+
+  broadcastChat(text) {
+    if (!this.chatAction || !text) return;
+    this.chatAction.send({
+      text: text.slice(0, 140),
+      tag: this.identity ? this.identity.tag : 'P1',
+      colorHex: this.identity ? this.identity.colorHex : '#00f5ff'
+    });
   }
 
   broadcastHighScore(gameTitle, score) {

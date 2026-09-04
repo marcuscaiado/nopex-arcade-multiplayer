@@ -35,7 +35,16 @@ export class ArcadePlayer {
 
     this.createAvatarMesh();
     this.createNameTagSprite();
+    this.createSpeechBubbleSprite();
     this.bindKeyboard();
+  }
+
+  resetMovement() {
+    this.keys.forward = false;
+    this.keys.backward = false;
+    this.keys.left = false;
+    this.keys.right = false;
+    this.isMoving = false;
   }
 
   setIdentity(identity) {
@@ -90,6 +99,84 @@ export class ArcadePlayer {
     this.nameSprite.position.set(0, 2.35, 0);
     this.nameSprite.scale.set(1.6, 0.55, 1.0);
     this.group.add(this.nameSprite);
+  }
+
+  createSpeechBubbleSprite() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 384;
+    canvas.height = 140;
+    this.bubbleCanvas = canvas;
+    this.bubbleCtx = canvas.getContext('2d');
+    this.bubbleTexture = new THREE.CanvasTexture(canvas);
+    this.bubbleTexture.minFilter = THREE.LinearFilter;
+
+    const spriteMat = new THREE.SpriteMaterial({
+      map: this.bubbleTexture,
+      transparent: true,
+      depthTest: false
+    });
+    this.speechSprite = new THREE.Sprite(spriteMat);
+    this.speechSprite.position.set(0, 3.1, 0);
+    this.speechSprite.scale.set(2.2, 0.8, 1.0);
+    this.speechSprite.visible = false;
+    this.speechTimer = 0;
+    this.group.add(this.speechSprite);
+  }
+
+  showSpeechBubble(text) {
+    if (!text || !this.speechSprite) return;
+    const ctx = this.bubbleCtx;
+    const w = this.bubbleCanvas.width;
+    const h = this.bubbleCanvas.height;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Cyber speech bubble background with rounded corners
+    ctx.fillStyle = 'rgba(8, 12, 28, 0.94)';
+    ctx.strokeStyle = this.colorHex || '#00f5ff';
+    ctx.lineWidth = 4;
+
+    // Main body pill
+    ctx.beginPath();
+    ctx.roundRect(10, 10, w - 20, h - 36, 18);
+    ctx.fill();
+    ctx.stroke();
+
+    // Downward arrow / speech tail
+    ctx.beginPath();
+    ctx.moveTo(w / 2 - 14, h - 26);
+    ctx.lineTo(w / 2, h - 6);
+    ctx.lineTo(w / 2 + 14, h - 26);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Fill over tail base to connect smoothly with bubble interior
+    ctx.fillStyle = 'rgba(8, 12, 28, 0.94)';
+    ctx.fillRect(w / 2 - 12, h - 28, 24, 6);
+
+    // Speech text with line wrapping
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 22px "Outfit", "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const maxChars = 22;
+    const clean = text.trim();
+    if (clean.length <= maxChars) {
+      ctx.fillText(clean, w / 2, (h - 36) / 2 + 10);
+    } else {
+      let splitIdx = clean.lastIndexOf(' ', maxChars);
+      if (splitIdx === -1 || splitIdx < 8) splitIdx = maxChars;
+      const line1 = clean.substring(0, splitIdx).trim();
+      const line2 = clean.substring(splitIdx, splitIdx + maxChars).trim();
+      ctx.fillText(line1, w / 2, 34);
+      ctx.fillText(line2 + (clean.length > splitIdx + maxChars ? '...' : ''), w / 2, 64);
+    }
+
+    this.bubbleTexture.needsUpdate = true;
+    this.speechSprite.visible = true;
+    this.speechTimer = 5.0; // Show for 5 seconds
   }
 
   setNavigationTarget(x, z, onArrival = null) {
@@ -244,6 +331,12 @@ export class ArcadePlayer {
 
   bindKeyboard() {
     window.addEventListener('keydown', (e) => {
+      // Suspend movement keys if playing inside an arcade cabinet or typing in chat
+      if (window.__arcadeOverlayOpen || document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
+        this.resetMovement();
+        return;
+      }
+
       if (['ArrowUp', 'KeyW'].includes(e.code)) this.keys.forward = true;
       if (['ArrowDown', 'KeyS'].includes(e.code)) this.keys.backward = true;
       if (['ArrowLeft', 'KeyA'].includes(e.code)) this.keys.left = true;
@@ -420,6 +513,17 @@ export class ArcadePlayer {
     // Billboard name tag to camera
     if (this.nameSprite && camera) {
       this.nameSprite.quaternion.copy(camera.quaternion);
+    }
+
+    // Billboard and update speech bubble
+    if (this.speechSprite && this.speechSprite.visible) {
+      if (camera) {
+        this.speechSprite.quaternion.copy(camera.quaternion);
+      }
+      this.speechTimer -= delta;
+      if (this.speechTimer <= 0) {
+        this.speechSprite.visible = false;
+      }
     }
   }
 }

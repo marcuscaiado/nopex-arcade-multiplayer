@@ -22,6 +22,7 @@ export class RemoteArcadePlayer {
 
     this.createAvatarMesh();
     this.createNameTagSprite();
+    this.createSpeechBubbleSprite();
   }
 
   createAvatarMesh() {
@@ -179,6 +180,84 @@ export class RemoteArcadePlayer {
     if (this.nameTexture) this.nameTexture.needsUpdate = true;
   }
 
+  createSpeechBubbleSprite() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 384;
+    canvas.height = 140;
+    this.bubbleCanvas = canvas;
+    this.bubbleCtx = canvas.getContext('2d');
+    this.bubbleTexture = new THREE.CanvasTexture(canvas);
+    this.bubbleTexture.minFilter = THREE.LinearFilter;
+
+    const spriteMat = new THREE.SpriteMaterial({
+      map: this.bubbleTexture,
+      transparent: true,
+      depthTest: false
+    });
+    this.speechSprite = new THREE.Sprite(spriteMat);
+    this.speechSprite.position.set(0, 3.1, 0);
+    this.speechSprite.scale.set(2.2, 0.8, 1.0);
+    this.speechSprite.visible = false;
+    this.speechTimer = 0;
+    this.group.add(this.speechSprite);
+  }
+
+  showSpeechBubble(text) {
+    if (!text || !this.speechSprite) return;
+    const ctx = this.bubbleCtx;
+    const w = this.bubbleCanvas.width;
+    const h = this.bubbleCanvas.height;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Cyber speech bubble background with rounded corners
+    ctx.fillStyle = 'rgba(8, 12, 28, 0.94)';
+    ctx.strokeStyle = this.colorHex || '#00f5ff';
+    ctx.lineWidth = 4;
+
+    // Main body pill
+    ctx.beginPath();
+    ctx.roundRect(10, 10, w - 20, h - 36, 18);
+    ctx.fill();
+    ctx.stroke();
+
+    // Downward arrow / speech tail
+    ctx.beginPath();
+    ctx.moveTo(w / 2 - 14, h - 26);
+    ctx.lineTo(w / 2, h - 6);
+    ctx.lineTo(w / 2 + 14, h - 26);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Fill over tail base to connect smoothly with bubble interior
+    ctx.fillStyle = 'rgba(8, 12, 28, 0.94)';
+    ctx.fillRect(w / 2 - 12, h - 28, 24, 6);
+
+    // Speech text with line wrapping
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 22px "Outfit", "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const maxChars = 22;
+    const clean = text.trim();
+    if (clean.length <= maxChars) {
+      ctx.fillText(clean, w / 2, (h - 36) / 2 + 10);
+    } else {
+      let splitIdx = clean.lastIndexOf(' ', maxChars);
+      if (splitIdx === -1 || splitIdx < 8) splitIdx = maxChars;
+      const line1 = clean.substring(0, splitIdx).trim();
+      const line2 = clean.substring(splitIdx, splitIdx + maxChars).trim();
+      ctx.fillText(line1, w / 2, 34);
+      ctx.fillText(line2 + (clean.length > splitIdx + maxChars ? '...' : ''), w / 2, 64);
+    }
+
+    this.bubbleTexture.needsUpdate = true;
+    this.speechSprite.visible = true;
+    this.speechTimer = 5.0; // Show for 5 seconds
+  }
+
   setTelemetry(x, z, rotY, isMoving, y = 0) {
     this.targetPosition.set(x, y, z);
     this.targetRotation = rotY;
@@ -222,6 +301,17 @@ export class RemoteArcadePlayer {
     // Billboard name tag to always face active camera
     if (this.nameSprite && camera) {
       this.nameSprite.quaternion.copy(camera.quaternion);
+    }
+
+    // Billboard and update speech bubble
+    if (this.speechSprite && this.speechSprite.visible) {
+      if (camera) {
+        this.speechSprite.quaternion.copy(camera.quaternion);
+      }
+      this.speechTimer -= dt;
+      if (this.speechTimer <= 0) {
+        this.speechSprite.visible = false;
+      }
     }
   }
 

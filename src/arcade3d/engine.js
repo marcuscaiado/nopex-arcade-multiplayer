@@ -23,10 +23,13 @@ export class Arcade3DEngine {
     this.initScene();
     this.initWorld();
     this.initPlayer();
+    this.initTokens();
     this.initInteraction();
     this.initOverlay();
     this.initJukebox();
     this.initNetwork();
+    this.initPointerLock();
+    this.initChatDock();
     this.initMobileControls();
     this.initTapToWalk();
 
@@ -81,19 +84,66 @@ export class Arcade3DEngine {
     this.player = new ArcadePlayer(this.scene, this.identity);
   }
 
+  initTokens() {
+    let stored = parseInt(localStorage.getItem('arcade_tokens'), 10);
+    if (isNaN(stored) || stored <= 0) stored = 25;
+    this.tokens = stored;
+    try {
+      this.discoveredCabinets = new Set(JSON.parse(localStorage.getItem('arcade_discovered') || '[]'));
+    } catch (e) {
+      this.discoveredCabinets = new Set();
+    }
+    this.updateTokensDisplay();
+  }
+
+  updateTokensDisplay() {
+    const el = document.getElementById('arcade-tokens-val');
+    if (el) el.textContent = this.tokens;
+    localStorage.setItem('arcade_tokens', String(this.tokens));
+  }
+
+  spendToken() {
+    if (this.tokens > 0) {
+      this.tokens -= 1;
+    } else {
+      this.tokens = 5; // Automatic bonus reload
+    }
+    this.updateTokensDisplay();
+    import('./audio.js').then(m => m.playCoinDrop?.());
+  }
+
+  awardExplorationToken(cabId) {
+    if (cabId && !this.discoveredCabinets.has(cabId)) {
+      this.discoveredCabinets.add(cabId);
+      try {
+        localStorage.setItem('arcade_discovered', JSON.stringify([...this.discoveredCabinets]));
+      } catch (e) {}
+      this.tokens += 2;
+      this.updateTokensDisplay();
+    }
+  }
+
   initInteraction() {
-    this.interaction = new ArcadeInteraction(this.world.cabinets, (game, cabinet) => {
-      this.launchGame(game, cabinet);
-    });
+    this.interaction = new ArcadeInteraction(
+      this.world.cabinets,
+      (game, cabinet) => this.launchGame(game, cabinet),
+      (cabId) => this.awardExplorationToken(cabId)
+    );
   }
 
   initOverlay() {
     this.overlay = new ArcadePlayOverlay(() => {
       this.isZoomingIn = false;
-      this.zoomTarget = null;
       this.zoomProgress = 0;
       this.clock.getDelta(); // Reset clock delta so camera doesn't jump
-      if (this.network) this.network.broadcastActivity('ONLINE');
+      if (this.zoomTarget) {
+        this.zoomTarget.clearOccupied();
+        this.zoomTarget = null;
+      }
+      if (this.network) {
+        this.network.broadcastActivity('ONLINE');
+        this.network.broadcastPlayingGame(null, false);
+      }
     });
   }
 
@@ -104,6 +154,9 @@ export class Arcade3DEngine {
   }
 
   openJukebox() {
+    if (document.pointerLockElement) {
+      document.exitPointerLock?.();
+    }
     if (this.jukeboxModal) {
       import('./audio.js').then(m => m.playDopamineChime?.());
       this.jukeboxModal.open();
@@ -114,6 +167,171 @@ export class Arcade3DEngine {
     this.scoreTicker = new ScoreTicker();
     this.network = new ArcadeNetwork(this.scene, this.identity || { tag: 'MARC1', color: 0x00f5ff, colorHex: '#00f5ff' }, this.scoreTicker);
     window.__ARCADE_NETWORK__ = this.network;
+
+    this.network.onCabinetOccupancyChange = (peerId, tag, gameId, isPlaying) => {
+      if (isPlaying && gameId) {
+        const cab = this.world.cabinets.find(c => c.game.id === gameId);
+        if (cab) cab.setOccupiedBy(tag);
+      } else {
+        this.world.cabinets.forEach(cab => {
+          if (cab.occupiedBy === tag) cab.clearOccupied();
+        });
+      }
+    };
+  }
+
+  initPointerLock() {
+    const dom = this.renderer.domElement;
+    this.isPointerLocked = false;
+    this.camPitch = 0;
+
+    dom.addEventListener('click', (e) => {
+      if (document.body.classList.contains('touch-device') || ('ontouchstart' in window)) return;
+      if (window.__arcadeOverlayOpen || (this.overlay && this.overlay.isOpen)) return;
+      if (this.jukeboxModal && this.jukeboxModal.isOpen) return;
+
+      if (e.target.closest && e.target.closest('.nopex-hud-header, .arcade-music-hud, .arcade-commands-dock, .arcade-hologram-card, .arcade-jukebox-modal, #arcade-chat-dock')) {
+        return;
+      }
+
+      if (document.pointerLockElement !== dom && dom.requestPointerLock) {
+        dom.requestPointerLock();
+      }
+    });
+
+    document.addEventListener('pointerlockchange', () => {
+      this.isPointerLocked = (document.pointerLockElement === dom);
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!this.isPointerLocked) return;
+      if (window.__arcadeOverlayOpen || (this.overlay && this.overlay.isOpen)) return;
+
+      const movementX = e.movementX || 0;
+      const movementY = e.movementY || 0;
+
+      this.player.rotation -= movementX * 0.0032;
+      this.player.targetRotation = this.player.rotation;
+      this.camPitch = Math.max(-0.2, Math.min(0.35, (this.camPitch || 0) - movementY * 0.0018));
+    });
+  }
+
+  initChatDock() {
+    const dock = document.getElementById('arcade-chat-dock');
+    const messagesEl = document.getElementById('arcade-chat-messages');
+    const input = document.getElementById('arcade-chat-input');
+    const sendBtn = document.getElementById('arcade-chat-send');
+    const mobileToggle = document.getElementById('mobile-chat-toggle');
+
+    this.chatDock = dock;
+    this.chatMessagesEl = messagesEl;
+    this.chatInput = input;
+
+    const sendMessage = () => {
+      if (!input) return;
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+
+      const myTag = this.identity?.tag || 'VOCÊ';
+      const myColor = this.identity?.colorHex || '#00f5ff';
+
+      this.player.showSpeechBubble(text);
+
+      if (this.network) {
+        this.network.broadcastChat(text);
+      }
+
+      this.appendChatMessage(myTag, text, myColor, true);
+      input.blur();
+    };
+
+    if (sendBtn) {
+      sendBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        sendMessage();
+      });
+    }
+
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          sendMessage();
+        } else if (e.key === 'Escape') {
+          input.blur();
+        }
+      });
+    }
+
+    if (mobileToggle && dock) {
+      mobileToggle.addEventListener('click', () => {
+        dock.classList.toggle('active');
+        if (dock.classList.contains('active') && input) {
+          input.focus();
+        }
+      });
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (window.__arcadeOverlayOpen) return;
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        return;
+      }
+      if (e.code === 'KeyC') {
+        e.preventDefault();
+        if (document.pointerLockElement) {
+          document.exitPointerLock?.();
+        }
+        if (dock) dock.classList.add('active');
+        if (input) {
+          input.focus();
+          input.select();
+        }
+      }
+    });
+
+    window.addEventListener('arcade-chat-received', (e) => {
+      const detail = e.detail;
+      if (!detail) return;
+      this.appendChatMessage(detail.tag || 'P2', detail.text, detail.colorHex || '#ff007f', false);
+    });
+  }
+
+  appendChatMessage(tag, text, colorHex, isSelf = false) {
+    if (!this.chatMessagesEl) return;
+    const row = document.createElement('div');
+    row.className = `chat-msg-row ${isSelf ? 'msg-self' : ''}`;
+
+    const tagSpan = document.createElement('span');
+    tagSpan.className = 'chat-msg-tag';
+    tagSpan.textContent = `[${tag}]: `;
+    tagSpan.style.color = colorHex || '#00f5ff';
+
+    const textSpan = document.createElement('span');
+    textSpan.className = 'chat-msg-text';
+    textSpan.textContent = text;
+
+    row.appendChild(tagSpan);
+    row.appendChild(textSpan);
+    this.chatMessagesEl.appendChild(row);
+
+    while (this.chatMessagesEl.children.length > 25) {
+      this.chatMessagesEl.removeChild(this.chatMessagesEl.firstChild);
+    }
+
+    this.chatMessagesEl.scrollTop = this.chatMessagesEl.scrollHeight;
+
+    if (this.chatDock) {
+      this.chatDock.classList.add('active');
+      clearTimeout(this._chatHideTimer);
+      this._chatHideTimer = setTimeout(() => {
+        if (document.activeElement !== this.chatInput) {
+          this.chatDock.classList.remove('active');
+        }
+      }, 7000);
+    }
   }
 
   setPlayerIdentity(identity) {
@@ -133,10 +351,23 @@ export class Arcade3DEngine {
       return;
     }
 
+    if (document.pointerLockElement) {
+      document.exitPointerLock?.();
+    }
+
+    this.spendToken();
     this.isZoomingIn = true;
     this.zoomTarget = cabinet;
     this.zoomProgress = 0;
-    if (this.network) this.network.broadcastActivity(game.title);
+
+    if (cabinet) {
+      cabinet.setOccupiedBy(this.identity ? this.identity.tag : 'VOCÊ');
+    }
+
+    if (this.network) {
+      this.network.broadcastActivity(game.title || game.name);
+      this.network.broadcastPlayingGame(game.id, true);
+    }
 
     // Smooth camera zoom towards cabinet screen before opening overlay
     setTimeout(() => {
@@ -466,9 +697,10 @@ export class Arcade3DEngine {
       this.camera.position.lerp(targetCamPos, 0.16);
       this.camera.lookAt(screenCenter);
     } else {
-      // Third-person smooth follow (Fixed height steadycam: 100% fluid, zero tilt)
+      // Third-person smooth follow with pitch support
+      const pitch = this.camPitch || 0;
       const targetCamX = this.player.x;
-      const targetCamY = 4.0;
+      const targetCamY = 4.0 + pitch * 2.2;
       // Clamp camera so it NEVER penetrates the south wall
       const targetCamZ = Math.min(26.0, this.player.z + 6.2);
 
@@ -476,12 +708,12 @@ export class Arcade3DEngine {
       this.camera.position.y += (targetCamY - this.camera.position.y) * 0.14;
       this.camera.position.z += (targetCamZ - this.camera.position.z) * 0.14;
 
-      // Smooth lookTarget with synchronized lerp to prevent any camera tilt or sway
+      // Smooth lookTarget with synchronized lerp
       if (!this.camLookTarget) {
         this.camLookTarget = new THREE.Vector3(this.player.x, 1.4, this.player.z - 1.2);
       }
       this.camLookTarget.x += (this.player.x - this.camLookTarget.x) * 0.14;
-      this.camLookTarget.y = 1.4;
+      this.camLookTarget.y = 1.4 + pitch * 3.5;
       this.camLookTarget.z += ((this.player.z - 1.2) - this.camLookTarget.z) * 0.14;
 
       this.camera.lookAt(this.camLookTarget);

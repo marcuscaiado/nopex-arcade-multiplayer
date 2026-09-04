@@ -1,9 +1,10 @@
 import { playCabinetHighlight } from './audio.js';
 
 export class ArcadeInteraction {
-  constructor(cabinets, onPlayGame) {
+  constructor(cabinets, onPlayGame, onDiscoverCabinet = null) {
     this.cabinets = cabinets;
     this.onPlayGame = onPlayGame;
+    this.onDiscoverCabinet = onDiscoverCabinet;
     this.activeCabinet = null;
     this.lastHoveredCab = null;
 
@@ -20,6 +21,11 @@ export class ArcadeInteraction {
 
   bindInputs() {
     window.addEventListener('keydown', (e) => {
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        return;
+      }
+      if (window.__arcadeOverlayOpen) return;
+
       if ((e.code === 'Enter' || e.code === 'KeyE') && this.activeCabinet) {
         e.preventDefault();
         this.triggerPlay();
@@ -74,6 +80,9 @@ export class ArcadeInteraction {
         playCabinetHighlight();
         this.lastHoveredCab = closestCab;
         this.renderHologram(closestCab.game);
+        if (this.onDiscoverCabinet) {
+          this.onDiscoverCabinet(closestCab.game.id);
+        }
       }
 
       if (this.promptEl) this.promptEl.classList.add('visible');
