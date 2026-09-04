@@ -18,6 +18,12 @@ export class ArcadePlayer {
     this.speed = 7.5; // Walk speed
     this.radius = 0.45; // Human-scale collision radius
 
+    // Vertical Jump Physics
+    this.velocityY = 0;
+    this.gravity = -26.0;
+    this.jumpStrength = 8.5;
+    this.isGrounded = true;
+
     this.isMoving = false;
     this.walkCycle = 0;
     this.footstepTimer = 0;
@@ -182,10 +188,10 @@ export class ArcadePlayer {
       transparent: true,
       opacity: 0.45
     });
-    const shadow = new THREE.Mesh(shadowGeo, shadowMat);
-    shadow.rotation.x = -Math.PI / 2;
-    shadow.position.y = 0.02;
-    this.group.add(shadow);
+    this.shadow = new THREE.Mesh(shadowGeo, shadowMat);
+    this.shadow.rotation.x = -Math.PI / 2;
+    this.shadow.position.y = 0.02;
+    this.group.add(this.shadow);
 
     this.scene.add(this.group);
   }
@@ -242,6 +248,12 @@ export class ArcadePlayer {
       if (['ArrowDown', 'KeyS'].includes(e.code)) this.keys.backward = true;
       if (['ArrowLeft', 'KeyA'].includes(e.code)) this.keys.left = true;
       if (['ArrowRight', 'KeyD'].includes(e.code)) this.keys.right = true;
+      if (e.code === 'Space') {
+        if (this.isGrounded) {
+          this.velocityY = this.jumpStrength;
+          this.isGrounded = false;
+        }
+      }
     });
 
     window.addEventListener('keyup', (e) => {
@@ -353,15 +365,44 @@ export class ArcadePlayer {
     while (rotDiff > Math.PI) rotDiff -= Math.PI * 2;
     this.rotation += rotDiff * 0.25;
 
-    // Rock-solid grounded root position: ZERO vertical shake or wobble on camera
+    // Vertical Jump Physics
+    if (!this.isGrounded) {
+      this.velocityY += this.gravity * delta;
+      this.y += this.velocityY * delta;
+      if (this.y <= 0) {
+        this.y = 0;
+        this.velocityY = 0;
+        this.isGrounded = true;
+      }
+    }
+
+    // Set Avatar Position & Rotation
     this.group.position.set(this.x, this.y, this.z);
     this.group.rotation.y = this.rotation;
 
-    if (this.isMoving) {
+    // Dynamic ground shadow scaling & position counter-offsetting when airborne
+    if (this.shadow) {
+      const shadowScale = Math.max(0.35, 1.0 - this.y * 0.25);
+      this.shadow.scale.set(shadowScale, shadowScale, shadowScale);
+      this.shadow.position.y = 0.02 - this.y;
+    }
+
+    if (!this.isGrounded) {
+      // Airborne feet pose
+      this.leftFoot.position.y = 0.08;
+      this.rightFoot.position.y = 0.08;
+      this.leftFoot.position.z = -0.08;
+      this.rightFoot.position.z = 0.08;
+      this.torso.rotation.z = 0;
+    } else if (this.isMoving) {
+      this.leftFoot.position.y = 0;
+      this.rightFoot.position.y = 0;
       this.leftFoot.position.z = Math.sin(this.walkCycle) * 0.22;
       this.rightFoot.position.z = -Math.sin(this.walkCycle) * 0.22;
       this.torso.rotation.z = 0; // Zero roll tilt: keeps character and camera perfectly level
     } else {
+      this.leftFoot.position.y = 0;
+      this.rightFoot.position.y = 0;
       this.leftFoot.position.z = 0;
       this.rightFoot.position.z = 0;
       this.torso.rotation.z = 0;

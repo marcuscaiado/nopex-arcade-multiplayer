@@ -691,4 +691,6 @@ body.touch-device .hud-instructions {
   height: 100%;
   border: none;
   display: block;
+  transform: translateZ(0);
+  will-change: transform;
 }

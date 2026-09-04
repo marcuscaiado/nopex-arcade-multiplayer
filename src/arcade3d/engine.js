@@ -413,7 +413,7 @@ export class Arcade3DEngine {
 
     // 3. Update WebRTC Network Telemetry & Remote Players
     if (this.network) {
-      this.network.broadcastLocalPosition(this.player.x, this.player.z, this.player.rotation, this.player.isMoving);
+      this.network.broadcastLocalPosition(this.player.x, this.player.z, this.player.rotation, this.player.isMoving, this.player.y);
       this.network.update(delta, this.camera);
     }
 

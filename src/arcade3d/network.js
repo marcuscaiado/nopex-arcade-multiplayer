@@ -18,6 +18,7 @@ export class ArcadeNetwork {
     // Rate limiting & dead reckoning telemetry variables
     this.lastBroadcastTime = 0;
     this.lastSentX = null;
+    this.lastSentY = null;
     this.lastSentZ = null;
     this.lastSentRot = null;
     this.lastSentMoving = null;
@@ -161,7 +162,7 @@ export class ArcadeNetwork {
         if (!data) return;
         const remote = this.peers.get(peerId);
         if (remote) {
-          remote.setTelemetry(data.x, data.z, data.r, data.m);
+          remote.setTelemetry(data.x, data.z, data.r, data.m, data.y || 0);
         } else {
           // Received telemetry from an unmapped peer: self-heal by requesting identity!
           if (this.idAction && this.identity) {
@@ -213,7 +214,7 @@ export class ArcadeNetwork {
   }
 
   // Rate-limited to max 20 Hz (50ms) + Dead Reckoning
-  broadcastLocalPosition(x, z, rotY, isMoving) {
+  broadcastLocalPosition(x, z, rotY, isMoving, y = 0) {
     if (!this.posAction) return;
 
     const now = performance.now();
@@ -221,23 +222,26 @@ export class ArcadeNetwork {
     if (now - this.lastBroadcastTime < 50) return;
 
     const dx = this.lastSentX !== null ? Math.abs(x - this.lastSentX) : 999;
+    const dy = this.lastSentY !== null ? Math.abs(y - this.lastSentY) : 999;
     const dz = this.lastSentZ !== null ? Math.abs(z - this.lastSentZ) : 999;
     const dr = this.lastSentRot !== null ? Math.abs(rotY - this.lastSentRot) : 999;
     const dm = isMoving !== this.lastSentMoving;
 
     // Dead-reckoning: if standing still and within 0.02m threshold, don't spam packets (keepalive every 1.5s)
-    if (dx < 0.02 && dz < 0.02 && dr < 0.03 && !dm && (now - this.lastBroadcastTime < 1500)) {
+    if (dx < 0.02 && dy < 0.02 && dz < 0.02 && dr < 0.03 && !dm && (now - this.lastBroadcastTime < 1500)) {
       return;
     }
 
     this.lastBroadcastTime = now;
     this.lastSentX = x;
+    this.lastSentY = y;
     this.lastSentZ = z;
     this.lastSentRot = rotY;
     this.lastSentMoving = isMoving;
 
     this.posAction.send({
       x: Math.round(x * 100) / 100,
+      y: Math.round(y * 100) / 100,
       z: Math.round(z * 100) / 100,
       r: Math.round(rotY * 100) / 100,
       m: !!isMoving

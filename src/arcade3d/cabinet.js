@@ -138,7 +138,7 @@ function createScreenTexture(game, theme) {
       ctx.font = 'bold 22px monospace';
       ctx.shadowColor = '#' + theme.accent.toString(16).padStart(6, '0');
       ctx.shadowBlur = 16;
-      ctx.fillText('▶ PRESS [SPACE] TO PLAY ◀', 256, 410);
+      ctx.fillText('▶ PRESS [ENTER/E] TO PLAY ◀', 256, 410);
 
       ctx.font = '14px monospace';
       ctx.fillStyle = '#94a3b8';

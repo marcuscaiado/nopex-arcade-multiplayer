@@ -179,8 +179,8 @@ export class RemoteArcadePlayer {
     if (this.nameTexture) this.nameTexture.needsUpdate = true;
   }
 
-  setTelemetry(x, z, rotY, isMoving) {
-    this.targetPosition.set(x, 0, z);
+  setTelemetry(x, z, rotY, isMoving, y = 0) {
+    this.targetPosition.set(x, y, z);
     this.targetRotation = rotY;
     this.isMoving = !!isMoving;
     this.lastActiveTime = Date.now();

@@ -20,7 +20,7 @@ export class ArcadeInteraction {
 
   bindInputs() {
     window.addEventListener('keydown', (e) => {
-      if (e.code === 'Space' && this.activeCabinet) {
+      if ((e.code === 'Enter' || e.code === 'KeyE') && this.activeCabinet) {
         e.preventDefault();
         this.triggerPlay();
       }
@@ -91,7 +91,7 @@ export class ArcadeInteraction {
       this.promptTitle.innerHTML = `${game.icon || '🎮'} ${game.name || 'ARCADE GAME'}`;
     }
     if (this.promptDesc) {
-      this.promptDesc.textContent = game.description || 'Pressione [ESPAÇO] para entrar na máquina e jogar.';
+      this.promptDesc.textContent = game.description || 'Pressione [ENTER] ou [E] para entrar na máquina e jogar.';
     }
     if (this.promptRecord) {
       const lb = window.__ARCADE_LEADERBOARDS__ && window.__ARCADE_LEADERBOARDS__[game.id];

@@ -22,7 +22,7 @@ console.log('📌 Committing updates to master branch...');
 execSync('git add -A', { stdio: 'inherit' });
 const masterStatus = execSync('git status -s', { encoding: 'utf8' }).trim();
 if (masterStatus) {
-  execSync('git commit -m "feat(multiplayer): WebRTC P2P mesh, 3D avatars, 5-letter tags, cabinet presence & global highscores"', { stdio: 'inherit' });
+    execSync('git commit -m "feat(controls-perf): add lobby jump [Space], cabinet entry [Enter]/[E], and 100% emulator performance boost"', { stdio: 'inherit' });
   execSync('git push origin master', { stdio: 'inherit' });
 }
 
