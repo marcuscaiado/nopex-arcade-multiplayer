@@ -47,7 +47,7 @@ fs.writeFileSync('.gitignore', 'node_modules/\n.temp*\n');
 execSync('git add -A', { stdio: 'inherit' });
 const status = execSync('git status -s', { encoding: 'utf8' }).trim();
 if (status) {
-  execSync('git commit -m "deploy: 🚀 Retro Arcade Jukebox with 15 classic soundtracks"', { stdio: 'inherit' });
+  execSync('git commit -m "deploy: 🚀 WebRTC data-channel live frame streaming for spectator mode"', { stdio: 'inherit' });
   execSync('git push origin gh-pages', { stdio: 'inherit' });
 }
 
