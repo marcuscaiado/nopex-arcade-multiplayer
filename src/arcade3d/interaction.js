@@ -8,6 +8,7 @@ export class ArcadeInteraction {
     this.onWatchGame = onWatchGame;
     this.activeCabinet = null;
     this.lastHoveredCab = null;
+    this._lastPlayerPos = null;
 
     // DOM Hologram Card & Action Prompt elements
     this.promptEl = document.getElementById('arcade-3d-prompt');
@@ -28,24 +29,33 @@ export class ArcadeInteraction {
       }
       if (window.__arcadeOverlayOpen || window.__arcadeSpectating) return;
 
-      if ((e.code === 'Enter' || e.code === 'KeyE') && this.activeCabinet) {
-        e.preventDefault();
-        this.triggerPlay();
+      const isWatchKey = (e.code === 'KeyV' || e.key === 'v' || e.key === 'V');
+      if (isWatchKey) {
+        const target = this.activeCabinet || this.findClosestLiveCabinet();
+        if (target && (target.isLiveStreaming || target.occupiedBy)) {
+          e.preventDefault();
+          e.stopPropagation();
+          this.triggerWatch(target);
+          return;
+        }
       }
 
-      if (e.code === 'KeyV' && this.activeCabinet) {
+      const isPlayKey = (e.code === 'Enter' || e.code === 'KeyE' || e.key === 'e' || e.key === 'E' || e.key === 'Enter');
+      if (isPlayKey && this.activeCabinet) {
         e.preventDefault();
-        this.triggerWatch();
+        e.stopPropagation();
+        this.triggerPlay(this.activeCabinet);
+        return;
       }
-    });
+    }, true);
 
     if (this.actionBtn) {
       this.actionBtn.addEventListener('click', () => {
         if (this.activeCabinet) {
           if (this.activeCabinet.isLiveStreaming && this.onWatchGame) {
-            this.triggerWatch();
+            this.triggerWatch(this.activeCabinet);
           } else {
-            this.triggerPlay();
+            this.triggerPlay(this.activeCabinet);
           }
         }
       });
@@ -53,13 +63,13 @@ export class ArcadeInteraction {
 
     if (this.playBtn) {
       this.playBtn.addEventListener('click', () => {
-        if (this.activeCabinet) this.triggerPlay();
+        if (this.activeCabinet) this.triggerPlay(this.activeCabinet);
       });
     }
 
     if (this.watchBtn) {
       this.watchBtn.addEventListener('click', () => {
-        if (this.activeCabinet) this.triggerWatch();
+        if (this.activeCabinet) this.triggerWatch(this.activeCabinet);
       });
     }
 
@@ -67,28 +77,49 @@ export class ArcadeInteraction {
       this.promptEl.addEventListener('click', (e) => {
         if (e.target.tagName !== 'BUTTON' && this.activeCabinet) {
           if (this.activeCabinet.isLiveStreaming && this.onWatchGame) {
-            this.triggerWatch();
+            this.triggerWatch(this.activeCabinet);
           } else {
-            this.triggerPlay();
+            this.triggerPlay(this.activeCabinet);
           }
         }
       });
     }
   }
 
-  triggerPlay() {
-    if (this.activeCabinet && this.onPlayGame) {
-      this.onPlayGame(this.activeCabinet.game, this.activeCabinet);
+  findClosestLiveCabinet() {
+    let best = null;
+    let bestDist = 5.2; // Proximity search up to 5.2m for live cabinets
+    for (const cab of this.cabinets) {
+      if (cab.isLiveStreaming || cab.occupiedBy) {
+        if (this._lastPlayerPos) {
+          const d = Math.hypot(this._lastPlayerPos.x - cab.position.x, this._lastPlayerPos.z - cab.position.z);
+          if (d < bestDist) {
+            bestDist = d;
+            best = cab;
+          }
+        } else {
+          best = cab;
+        }
+      }
+    }
+    return best;
+  }
+
+  triggerPlay(cab = this.activeCabinet) {
+    if (cab && this.onPlayGame) {
+      this.onPlayGame(cab.game, cab);
     }
   }
 
-  triggerWatch() {
-    if (this.activeCabinet && this.onWatchGame) {
-      this.onWatchGame(this.activeCabinet);
+  triggerWatch(cab = this.activeCabinet) {
+    if (cab && this.onWatchGame) {
+      this.onWatchGame(cab);
     }
   }
 
   update(player) {
+    this._lastPlayerPos = { x: player.x, z: player.z };
+
     if (window.__arcadeSpectating) {
       if (this.promptEl) this.promptEl.classList.remove('visible');
       if (this.actionBtn) this.actionBtn.classList.remove('visible');
@@ -100,8 +131,10 @@ export class ArcadeInteraction {
 
     for (const cab of this.cabinets) {
       cab.isHovered = false;
-      const d = Math.hypot(player.x - cab.standSpot.x, player.z - cab.standSpot.z);
-      if (d < 3.8 && d < closestDist) {
+      const dStand = Math.hypot(player.x - cab.standSpot.x, player.z - cab.standSpot.z);
+      const dCenter = Math.hypot(player.x - cab.position.x, player.z - cab.position.z);
+      const d = Math.min(dStand, dCenter * 0.92);
+      if (d < 4.2 && d < closestDist) {
         closestDist = d;
         closestCab = cab;
       }

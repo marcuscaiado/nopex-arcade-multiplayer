@@ -370,7 +370,6 @@ export function createArcadeCabinet(game, position, rotationY = 0) {
     isLiveStreaming: false,
     liveStreamTag: null,
     spectatorCount: 0,
-    _frameImg: null,
     setLiveFrame(frameData, tag = 'PILOTO') {
       if (!frameData) return;
       this.isLiveStreaming = true;
@@ -378,33 +377,62 @@ export function createArcadeCabinet(game, position, rotationY = 0) {
       this.occupiedBy = tag;
       this.occupancyBadge.setPlayer(tag, true, this.spectatorCount);
 
-      if (!this._frameImg) {
-        this._frameImg = new Image();
-        this._frameImg.onload = () => {
-          screenCtx.fillStyle = '#050712';
-          screenCtx.fillRect(0, 0, 256, 224);
+      const img = new Image();
+      img.onload = () => {
+        screenCtx.fillStyle = '#050712';
+        screenCtx.fillRect(0, 0, 256, 224);
 
-          const iw = this._frameImg.width || 256;
-          const ih = this._frameImg.height || 192;
-          const hRatio = 256 / iw;
-          const vRatio = 224 / ih;
-          const ratio = Math.min(hRatio, vRatio);
-          const shiftX = (256 - iw * ratio) / 2;
-          const shiftY = (224 - ih * ratio) / 2;
+        const iw = img.width || 256;
+        const ih = img.height || 192;
+        const hRatio = 256 / iw;
+        const vRatio = 224 / ih;
+        const ratio = Math.min(hRatio, vRatio);
+        const shiftX = (256 - iw * ratio) / 2;
+        const shiftY = (224 - ih * ratio) / 2;
 
-          screenCtx.drawImage(this._frameImg, 0, 0, iw, ih, shiftX, shiftY, iw * ratio, ih * ratio);
+        screenCtx.drawImage(img, 0, 0, iw, ih, shiftX, shiftY, iw * ratio, ih * ratio);
 
-          // CRT phosphor scanline effect
-          screenCtx.fillStyle = 'rgba(0, 0, 0, 0.12)';
-          for (let y = 0; y < 224; y += 4) {
-            screenCtx.fillRect(0, y, 256, 1);
-          }
-          screenTex.needsUpdate = true;
-        };
+        // CRT phosphor scanline effect
+        screenCtx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+        for (let y = 0; y < 224; y += 4) {
+          screenCtx.fillRect(0, y, 256, 1);
+        }
+        screenTex.needsUpdate = true;
+      };
+      img.src = frameData;
+
+      if (this.screenMesh.material.map !== screenTex) {
+        this.screenMesh.material.map = screenTex;
+        this.screenMesh.material.needsUpdate = true;
+      }
+    },
+    drawLiveStandby(tag = 'PILOTO') {
+      screenCtx.fillStyle = '#080c24';
+      screenCtx.fillRect(0, 0, 256, 224);
+
+      screenCtx.strokeStyle = 'rgba(255, 0, 85, 0.25)';
+      screenCtx.lineWidth = 1;
+      for (let x = 0; x < 256; x += 32) {
+        screenCtx.beginPath(); screenCtx.moveTo(x, 0); screenCtx.lineTo(x, 224); screenCtx.stroke();
+      }
+      for (let y = 0; y < 224; y += 32) {
+        screenCtx.beginPath(); screenCtx.moveTo(0, y); screenCtx.lineTo(256, y); screenCtx.stroke();
       }
 
-      this._frameImg.src = frameData;
+      screenCtx.fillStyle = '#ff0055';
+      screenCtx.font = 'bold 15px sans-serif';
+      screenCtx.textAlign = 'center';
+      screenCtx.fillText('🔴 TRANSMISSÃO AO VIVO', 128, 95);
 
+      screenCtx.fillStyle = '#00f5ff';
+      screenCtx.font = 'bold 13px monospace';
+      screenCtx.fillText(`PILOTO: [${(tag || 'P1').toUpperCase()}]`, 128, 122);
+
+      screenCtx.fillStyle = '#05ffa1';
+      screenCtx.font = '11px monospace';
+      screenCtx.fillText('SINTONIZANDO FEED P2P...', 128, 144);
+
+      screenTex.needsUpdate = true;
       if (this.screenMesh.material.map !== screenTex) {
         this.screenMesh.material.map = screenTex;
         this.screenMesh.material.needsUpdate = true;
@@ -470,8 +498,13 @@ export function createArcadeCabinet(game, position, rotationY = 0) {
         this.occupancyBadge.setPlayer(null);
       }
     },
-    setOccupiedBy(tag) {
+    setOccupiedBy(tag, isLive = false) {
       this.occupiedBy = tag;
+      if (isLive) {
+        this.isLiveStreaming = true;
+        this.liveStreamTag = tag;
+        this.drawLiveStandby(tag);
+      }
       this.occupancyBadge.setPlayer(tag, this.isLiveStreaming, this.spectatorCount);
     },
     clearOccupied() {

@@ -201,20 +201,24 @@ export class ArcadePlayOverlay {
         }
 
         // Initialize capture video if captureStream is available
-        if (canvas !== this._currentCanvas) {
+        if (canvas !== this._currentCanvas || !this._captureVideo || !this._captureVideo.srcObject) {
           this._currentCanvas = canvas;
           if (typeof canvas.captureStream === 'function') {
             try {
-              const stream = canvas.captureStream(12);
+              const stream = canvas.captureStream(24);
               this.currentStream = stream;
               if (!this._captureVideo) {
                 this._captureVideo = document.createElement('video');
                 this._captureVideo.muted = true;
                 this._captureVideo.playsInline = true;
                 this._captureVideo.autoplay = true;
+                this._captureVideo.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-999;';
+                document.body.appendChild(this._captureVideo);
               }
-              this._captureVideo.srcObject = stream;
-              this._captureVideo.play().catch(() => {});
+              if (this._captureVideo.srcObject !== stream) {
+                this._captureVideo.srcObject = stream;
+                this._captureVideo.play().catch(() => {});
+              }
 
               if (!streamNotified && this.onStreamReady) {
                 streamNotified = true;
@@ -225,12 +229,14 @@ export class ArcadePlayOverlay {
         }
 
         // Choose frame source: video compositor if active, otherwise direct canvas
-        let source = canvas;
+        let source = null;
         if (this._captureVideo && this._captureVideo.videoWidth > 0 && !this._captureVideo.paused) {
           source = this._captureVideo;
+        } else if (canvas && (canvas.width > 0 || canvas.videoWidth > 0)) {
+          source = canvas;
         }
 
-        if (source && (source.videoWidth > 0 || source.width > 0)) {
+        if (source) {
           this._captureCtx.drawImage(source, 0, 0, 256, 192);
           const frameData = this._captureCanvas.toDataURL('image/webp', 0.42);
           if (this.onFrameReady && frameData && frameData.length > 50) {
@@ -262,7 +268,9 @@ export class ArcadePlayOverlay {
         }
         this._captureVideo.pause();
         this._captureVideo.srcObject = null;
+        this._captureVideo.remove();
       } catch (e) {}
+      this._captureVideo = null;
     }
     this._currentCanvas = null;
 

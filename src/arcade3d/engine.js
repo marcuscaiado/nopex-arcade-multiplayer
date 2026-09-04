@@ -215,11 +215,17 @@ export class Arcade3DEngine {
     // Escape and V keys to exit spectator camarote mode
     window.addEventListener('keydown', (e) => {
       if (!this.isSpectating) return;
-      if (e.code === 'Escape' || e.code === 'KeyV') {
+      // CRITICAL: Debounce exit by at least 400ms to prevent the exact same keydown event
+      // that opened spectating from immediately stopping it in the same event dispatch loop!
+      if (Date.now() - (this._spectateStartTime || 0) < 400) return;
+
+      const isExitKey = (e.code === 'Escape' || e.key === 'Escape' || e.code === 'KeyV' || e.key === 'v' || e.key === 'V');
+      if (isExitKey) {
         e.preventDefault();
+        e.stopPropagation();
         this.stopSpectating();
       }
-    });
+    }, true);
   }
 
   startSpectatingCabinet(cabinet) {
@@ -230,6 +236,7 @@ export class Arcade3DEngine {
       document.exitPointerLock?.();
     }
 
+    this._spectateStartTime = Date.now();
     this.isSpectating = true;
     this.spectateTarget = cabinet;
     window.__arcadeSpectating = true;
@@ -283,10 +290,7 @@ export class Arcade3DEngine {
       if (isPlaying && gameId) {
         const cab = this.world.cabinets.find(c => c.game.id === gameId);
         if (cab) {
-          cab.setOccupiedBy(tag);
-          if (isLiveStream) {
-            cab.occupancyBadge.setPlayer(tag, true);
-          }
+          cab.setOccupiedBy(tag, !!isLiveStream);
         }
       } else {
         this.world.cabinets.forEach(cab => {
