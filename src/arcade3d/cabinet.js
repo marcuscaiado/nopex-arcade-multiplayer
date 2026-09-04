@@ -189,6 +189,9 @@ export function createArcadeCabinet(game, position, rotationY = 0) {
   if (game.id === 'gta-2') {
     theme = { primary: 0xffd32a, secondary: 0x0066ff, accent: 0xff3838 };
   }
+  if (game.id === 'classic-doom') {
+    theme = { primary: 0xff3838, secondary: 0xff9f1a, accent: 0xffd32a };
+  }
 
   // Materials with good ambient visibility
   const cabinetBodyMat = new THREE.MeshStandardMaterial({

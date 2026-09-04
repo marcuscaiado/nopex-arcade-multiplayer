@@ -1,4 +1,5 @@
 import { playCoinDrop, playCabinetExit } from './audio.js';
+import { musicManager } from './music-manager.js';
 
 export class ArcadePlayOverlay {
   constructor(onCloseCallback) {
@@ -54,8 +55,9 @@ export class ArcadePlayOverlay {
     this.isOpen = true;
     this.activeGame = game;
 
-    // Play coin insert chime
+    // Play coin insert chime and duck background music
     playCoinDrop();
+    musicManager.duck(true);
 
     if (this.titleEl) {
       this.titleEl.innerHTML = `${game.icon || '🎮'} ${game.name || 'JOGO'}`;
@@ -78,6 +80,7 @@ export class ArcadePlayOverlay {
     this.isOpen = false;
 
     playCabinetExit();
+    musicManager.duck(false);
 
     if (this.overlay) {
       this.overlay.classList.remove('active');

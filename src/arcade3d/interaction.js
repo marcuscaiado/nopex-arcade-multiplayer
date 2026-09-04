@@ -91,14 +91,36 @@ export class ArcadeInteraction {
       this.promptTitle.innerHTML = `${game.icon || '🎮'} ${game.name || 'ARCADE GAME'}`;
     }
     if (this.promptDesc) {
-      this.promptDesc.textContent = game.description || 'Pressione [ENTER] ou [E] para entrar na máquina e jogar.';
+      if (game.isJukebox) {
+        this.promptDesc.textContent = game.description || 'Pressione [E] ou [ENTER] para abrir o Jukebox de trilhas clássicas.';
+      } else {
+        this.promptDesc.textContent = game.description || 'Pressione [ENTER] ou [E] para entrar na máquina e jogar.';
+      }
     }
     if (this.promptRecord) {
-      const lb = window.__ARCADE_LEADERBOARDS__ && window.__ARCADE_LEADERBOARDS__[game.id];
-      if (lb && lb.topScore) {
-        this.promptRecord.innerHTML = `🏆 Recorde Mundial: <strong>${lb.topScore.toLocaleString()} ${game.unit || 'PTS'}</strong> [${lb.topPilot || 'MRC'}]`;
+      if (game.isJukebox) {
+        this.promptRecord.innerHTML = `🎵 <strong>RETRO ARCADE JUKEBOX</strong> • 15 Trilhas Clássicas dos Jogos`;
       } else {
-        this.promptRecord.innerHTML = `⚡ 60 FPS Instantâneo • <strong>${(game.category || 'ACTION').toUpperCase()}</strong>`;
+        const lb = window.__ARCADE_LEADERBOARDS__ && window.__ARCADE_LEADERBOARDS__[game.id];
+        if (lb && lb.topScore) {
+          this.promptRecord.innerHTML = `🏆 Recorde Mundial: <strong>${lb.topScore.toLocaleString()} ${game.unit || 'PTS'}</strong> [${lb.topPilot || 'MRC'}]`;
+        } else {
+          this.promptRecord.innerHTML = `⚡ 60 FPS Instantâneo • <strong>${(game.category || 'ACTION').toUpperCase()}</strong>`;
+        }
+      }
+    }
+    if (this.playBtn) {
+      if (game.isJukebox) {
+        this.playBtn.innerHTML = `<span>PRESSIONE [E] PARA OUVIR</span> ➔`;
+      } else {
+        this.playBtn.innerHTML = `<span>PRESSIONE [ENTER] PARA JOGAR</span> ➔`;
+      }
+    }
+    if (this.actionBtn) {
+      if (game.isJukebox) {
+        this.actionBtn.innerHTML = `<span>OUVIR</span> 📻`;
+      } else {
+        this.actionBtn.innerHTML = `<span>JOGAR</span> 🕹️`;
       }
     }
   }

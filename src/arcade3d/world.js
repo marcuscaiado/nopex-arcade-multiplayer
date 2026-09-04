@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createArcadeCabinet } from './cabinet.js';
+import { createJukeboxCabinet } from './jukebox-cabinet.js';
 
 /**
  * Creates dynamic 2D canvas texture for retro synthwave carpet
@@ -236,8 +237,14 @@ export function buildArcadeWorld(scene, gamesManifest) {
     cabinets.push(cab);
   };
 
-  // ENTRANCE GRAND SHOWCASE: NEON CYBER TETRIS 3D (Right in front of player spawn)
-  addCabinet('neon-tetris-3d',    { x: 0, z: 2.8 }, Math.PI);          // Faces South directly towards player spawn!
+  // ENTRANCE GRAND SHOWCASE: CLASSIC DOOM, NEON CYBER TETRIS 3D & RETRO ARCADE JUKEBOX
+  addCabinet('classic-doom',      { x: -3.6, z: 2.8 }, 0);             // Faces South (Left Showcase)
+  addCabinet('neon-tetris-3d',    { x: 0, z: 2.8 }, 0);                // Faces South directly towards player spawn!
+
+  // RETRO ARCADE JUKEBOX (Grand Entrance Music Pavilion)
+  const jukebox = createJukeboxCabinet({ x: 3.6, z: 2.8 }, 0);
+  worldGroup.add(jukebox.group);
+  cabinets.push(jukebox);
 
   // ZONE 1: CENTER ROTUNDA (4 Featured MegaHits)
   addCabinet('geometricsurvivor', { x: 0, z: -8.0 }, 0);               // Faces North

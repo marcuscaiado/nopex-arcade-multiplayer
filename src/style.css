@@ -694,3 +694,702 @@ body.touch-device .hud-instructions {
   transform: translateZ(0);
   will-change: transform;
 }
+
+/* ==========================================================================
+   PHASE AI MUSIC — TOP HUD MINI-PLAYER
+   ========================================================================== */
+.arcade-music-hud {
+  position: absolute;
+  top: calc(62px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(10, 14, 32, 0.88);
+  backdrop-filter: blur(14px);
+  padding: 6px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 245, 255, 0.4);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.7), 0 0 12px rgba(0, 245, 255, 0.25);
+  z-index: 10;
+  pointer-events: auto;
+  transition: all 0.25s ease;
+  max-width: 95vw;
+}
+
+.arcade-music-hud:hover {
+  border-color: #00f5ff;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8), 0 0 18px rgba(0, 245, 255, 0.4);
+}
+
+.music-hud-eq {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 16px;
+  width: 18px;
+}
+
+.hud-eq-bar {
+  width: 3px;
+  height: 4px;
+  background: #00f5ff;
+  border-radius: 2px;
+  transition: height 0.15s ease;
+}
+
+.music-hud-eq.dancing .hud-eq-bar:nth-child(1) {
+  animation: hudEq1 0.45s ease-in-out infinite alternate;
+}
+.music-hud-eq.dancing .hud-eq-bar:nth-child(2) {
+  animation: hudEq2 0.35s ease-in-out infinite alternate 0.1s;
+  background: #ff007f;
+}
+.music-hud-eq.dancing .hud-eq-bar:nth-child(3) {
+  animation: hudEq3 0.5s ease-in-out infinite alternate 0.2s;
+  background: #ffd32a;
+}
+.music-hud-eq.dancing .hud-eq-bar:nth-child(4) {
+  animation: hudEq1 0.4s ease-in-out infinite alternate 0.15s;
+}
+
+@keyframes hudEq1 { 0% { height: 4px; } 100% { height: 16px; } }
+@keyframes hudEq2 { 0% { height: 6px; } 100% { height: 14px; } }
+@keyframes hudEq3 { 0% { height: 3px; } 100% { height: 15px; } }
+
+.music-hud-info {
+  font-size: 12px;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+}
+
+.music-hud-info strong {
+  color: #00f5ff;
+}
+
+.music-hud-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hud-ctrl-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-radius: 999px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hud-ctrl-btn:hover {
+  background: #00f5ff;
+  color: #000;
+  box-shadow: 0 0 10px #00f5ff;
+}
+
+.hud-play-btn {
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(135deg, #00f5ff, #ff007f);
+  border: none;
+  font-size: 12px;
+}
+
+.hud-expand-btn {
+  background: rgba(255, 0, 127, 0.18);
+  border: 1px solid rgba(255, 0, 127, 0.5);
+  color: #ff007f;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: all 0.2s;
+}
+
+.hud-expand-btn:hover {
+  background: #ff007f;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(255, 0, 127, 0.6);
+}
+
+@media (max-width: 768px) {
+  .arcade-music-hud {
+    top: calc(58px + env(safe-area-inset-top, 0px));
+    padding: 4px 12px;
+    gap: 8px;
+  }
+  .music-hud-info {
+    max-width: 140px;
+    font-size: 11px;
+  }
+  #music-hud-prev, #music-hud-next {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   PHASE AI JUKEBOX — FULLSCREEN MODAL OVERLAY
+   ========================================================================== */
+.arcade-jukebox-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.arcade-jukebox-modal.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.jukebox-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 7, 18, 0.85);
+  backdrop-filter: blur(16px);
+}
+
+.jukebox-window {
+  position: relative;
+  width: 92%;
+  max-width: 1020px;
+  height: 86vh;
+  max-height: 740px;
+  background: linear-gradient(180deg, #10132b 0%, #080a18 100%);
+  border: 1px solid rgba(0, 245, 255, 0.4);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 245, 255, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 2;
+}
+
+/* Jukebox Header */
+.jukebox-header {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(14, 18, 42, 0.7);
+}
+
+.jukebox-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.jukebox-logo-icon {
+  font-size: 24px;
+  color: #00f5ff;
+  text-shadow: 0 0 15px #00f5ff;
+}
+
+.jukebox-title {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  background: linear-gradient(135deg, #00f5ff, #ff007f);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.jukebox-subtitle {
+  font-size: 10px;
+  font-weight: 700;
+  color: #ffd32a;
+  letter-spacing: 1px;
+}
+
+.jukebox-close-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #e2e8f0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.jukebox-close-btn:hover {
+  background: #ff007f;
+  color: #fff;
+  border-color: #ff007f;
+  box-shadow: 0 0 15px rgba(255, 0, 127, 0.6);
+}
+
+/* Tabs */
+.jukebox-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 24px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(9, 12, 28, 0.7);
+}
+
+.jukebox-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.juke-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.juke-tab .tab-avatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.juke-tab:hover {
+  color: #fff;
+  border-color: rgba(0, 245, 255, 0.4);
+}
+
+.juke-tab.active {
+  background: rgba(0, 245, 255, 0.15);
+  border-color: #00f5ff;
+  color: #00f5ff;
+  box-shadow: 0 0 12px rgba(0, 245, 255, 0.3);
+}
+
+/* Main Body */
+.jukebox-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+.jukebox-tracklist {
+  flex: 1;
+  padding: 20px 24px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 14px;
+  align-content: start;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 245, 255, 0.4) transparent;
+}
+
+.jukebox-tracklist::-webkit-scrollbar {
+  width: 6px;
+}
+
+.jukebox-tracklist::-webkit-scrollbar-thumb {
+  background: rgba(0, 245, 255, 0.4);
+  border-radius: 4px;
+}
+
+.juke-track-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #141838;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 3px solid rgba(0, 245, 255, 0.4);
+  border-radius: 12px;
+  padding: 10px 14px;
+  min-height: 96px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.juke-track-card:hover {
+  background: #1c224c;
+  border-color: rgba(0, 245, 255, 0.6);
+  border-left: 3px solid #00f5ff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 245, 255, 0.2);
+}
+
+.juke-track-card.now-active {
+  background: #19234d;
+  border-color: #00f5ff;
+  border-left: 3px solid #00f5ff;
+  box-shadow: 0 0 24px rgba(0, 245, 255, 0.35);
+}
+
+.track-card-cover-wrap {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.track-card-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.track-card-play-btn {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  border: none;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  cursor: pointer;
+}
+
+.juke-track-card:hover .track-card-play-btn,
+.juke-track-card.now-active .track-card-play-btn {
+  opacity: 1;
+}
+
+.track-card-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.track-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.track-card-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.now-playing-badge {
+  font-size: 9px;
+  font-weight: 800;
+  background: #00f5ff;
+  color: #000;
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.track-card-artist {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.track-card-meta {
+  display: flex;
+  gap: 8px;
+  font-size: 10px;
+  color: #64748b;
+}
+
+.track-meta-badge {
+  color: #ffd32a;
+  background: rgba(255, 211, 42, 0.12);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+/* Lyrics Panel */
+.jukebox-lyrics-panel {
+  width: 320px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 13, 30, 0.85);
+  display: flex;
+  flex-direction: column;
+}
+
+.lyrics-header {
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.lyrics-tag {
+  font-size: 10px;
+  font-weight: 800;
+  color: #ff007f;
+  letter-spacing: 1px;
+}
+
+.lyrics-close-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.lyrics-close-btn:hover {
+  color: #fff;
+}
+
+.lyrics-content {
+  flex: 1;
+  padding: 16px 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lyrics-line {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.lyrics-time {
+  color: #00f5ff;
+  font-family: monospace;
+  font-size: 10px;
+  margin-right: 6px;
+}
+
+.lyrics-text {
+  color: #cbd5e1;
+}
+
+/* Bottom Player Dock */
+.jukebox-dock {
+  height: 84px;
+  background: rgba(12, 16, 38, 0.95);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  gap: 16px;
+}
+
+.dock-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 280px;
+}
+
+.dock-cover-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #1e293b;
+}
+
+.dock-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dock-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dock-artist {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dock-lyrics-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #cbd5e1;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 8px;
+  transition: all 0.2s;
+}
+
+.dock-lyrics-btn:hover {
+  border-color: #ff007f;
+  color: #ff007f;
+}
+
+.dock-center {
+  flex: 1;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.dock-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dock-ctrl-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dock-ctrl-btn:hover {
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.dock-play-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00f5ff, #ff007f);
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  box-shadow: 0 0 15px rgba(0, 245, 255, 0.4);
+}
+
+.dock-play-btn:hover {
+  transform: scale(1.12);
+  box-shadow: 0 0 20px rgba(0, 245, 255, 0.7);
+}
+
+.dock-scrubber-wrap {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dock-time {
+  font-size: 10px;
+  color: #64748b;
+  font-family: monospace;
+}
+
+.dock-progress-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.dock-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #00f5ff, #ff007f);
+  border-radius: 2px;
+  transition: width 0.2s linear;
+}
+
+.dock-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 200px;
+  justify-content: flex-end;
+}
+
+.dock-vol-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dock-vol-icon {
+  font-size: 13px;
+}
+
+.dock-vol-slider {
+  width: 70px;
+  accent-color: #00f5ff;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .jukebox-window {
+    width: 98%;
+    height: 94vh;
+  }
+  .jukebox-tracklist {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+  .dock-right, .dock-lyrics-btn {
+    display: none;
+  }
+  .dock-left {
+    width: auto;
+    max-width: 140px;
+  }
+}
+

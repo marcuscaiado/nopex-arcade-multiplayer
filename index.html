@@ -53,6 +53,9 @@
           <div class="teleport-dropdown-wrap">
             <select id="teleport-select" class="teleport-select" title="Teletransportar para máquina">
               <option value="">🚀 Teleporte Rápido...</option>
+              <optgroup label="📻 Música & Jukebox">
+                <option value="phase-ai-jukebox">📻 Retro Arcade Jukebox ⚡</option>
+              </optgroup>
               <optgroup label="🌟 Megahits em Destaque">
                 <option value="neon-tetris-3d">🧱 Neon Cyber Tetris 3D</option>
                 <option value="geometricsurvivor">⚔️ Geometric Survivor 3D</option>
@@ -64,6 +67,7 @@
                 <option value="stickman-fps-arcade">🔫 Stickman FPS Arcade</option>
                 <option value="sky-ace-1944">🛩️ Sky Ace 1944</option>
                 <option value="asteroid-blitz">🛸 Asteroid Blitz</option>
+                <option value="classic-doom">🔥 Classic DOOM (1993)</option>
                 <option value="street-fighter-2">🥊 Street Fighter II Turbo</option>
                 <option value="gta-2">🚗 Grand Theft Auto 2</option>
                 <option value="cyber-shuriken">🎯 Cyber Shuriken Neo</option>
@@ -96,6 +100,26 @@
           </a>
         </div>
       </header>
+
+      <!-- Top Cyberpunk Music HUD Player (Retro Arcade Jukebox) -->
+      <aside id="arcade-music-hud" class="arcade-music-hud" aria-label="Player de Música Retrô">
+        <div class="music-hud-eq" id="music-hud-eq" title="Equalizador de Áudio">
+          <span class="hud-eq-bar"></span>
+          <span class="hud-eq-bar"></span>
+          <span class="hud-eq-bar"></span>
+          <span class="hud-eq-bar"></span>
+        </div>
+        <div class="music-hud-info" id="music-hud-ticker" title="Clique para abrir o Jukebox">
+          🎵 <strong>Yuzo Koshiro</strong> — Go Straight (Streets of Rage 2)
+        </div>
+        <div class="music-hud-controls">
+          <button id="music-hud-prev" class="hud-ctrl-btn" title="Faixa Anterior">⏮</button>
+          <button id="music-hud-play" class="hud-ctrl-btn hud-play-btn" title="Tocar / Pausar">▶</button>
+          <button id="music-hud-next" class="hud-ctrl-btn" title="Próxima Faixa">⏭</button>
+          <button id="music-hud-vol" class="hud-ctrl-btn" title="Mutar / Desmutar">🔊</button>
+          <button id="music-hud-expand" class="hud-expand-btn" title="Abrir Jukebox Completo">📻 JUKEBOX</button>
+        </div>
+      </aside>
 
       <!-- Floating Hologram Card HUD when near an arcade cabinet -->
       <div id="arcade-3d-prompt" class="arcade-hologram-card">
@@ -167,6 +191,9 @@
         <iframe id="arcade-game-iframe" src="about:blank" allow="autoplay; fullscreen; encrypted-media; gamepad; cross-origin-isolated" loading="eager"></iframe>
       </div>
     </div>
+
+    <!-- Retro Arcade Jukebox Modal Overlay -->
+    <div id="arcade-jukebox-modal" class="arcade-jukebox-modal" style="display: none;"></div>
 
     <script type="module" src="./src/main.js"></script>
   </body>

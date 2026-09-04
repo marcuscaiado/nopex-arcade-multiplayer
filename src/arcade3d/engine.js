@@ -5,6 +5,9 @@ import { ArcadeInteraction } from './interaction.js';
 import { ArcadePlayOverlay } from './play-overlay.js';
 import { ScoreTicker } from './score-ticker.js';
 import { ArcadeNetwork } from './network.js';
+import { musicManager } from './music-manager.js';
+import { ArcadeJukeboxModal } from './jukebox-modal.js';
+import { ArcadeMusicHud } from './music-hud.js';
 
 export class Arcade3DEngine {
   constructor(containerEl, gamesManifest, identity = null) {
@@ -22,6 +25,7 @@ export class Arcade3DEngine {
     this.initPlayer();
     this.initInteraction();
     this.initOverlay();
+    this.initJukebox();
     this.initNetwork();
     this.initMobileControls();
     this.initTapToWalk();
@@ -92,6 +96,19 @@ export class Arcade3DEngine {
     });
   }
 
+  initJukebox() {
+    this.jukeboxModal = new ArcadeJukeboxModal();
+    this.musicHud = new ArcadeMusicHud(() => this.openJukebox());
+    musicManager.init();
+  }
+
+  openJukebox() {
+    if (this.jukeboxModal) {
+      import('./audio.js').then(m => m.playDopamineChime?.());
+      this.jukeboxModal.open();
+    }
+  }
+
   initNetwork() {
     this.scoreTicker = new ScoreTicker();
     this.network = new ArcadeNetwork(this.scene, this.identity || { tag: 'MARC1', color: 0x00f5ff, colorHex: '#00f5ff' }, this.scoreTicker);
@@ -110,6 +127,11 @@ export class Arcade3DEngine {
   }
 
   launchGame(game, cabinet) {
+    if (cabinet && cabinet.isJukebox) {
+      this.openJukebox();
+      return;
+    }
+
     this.isZoomingIn = true;
     this.zoomTarget = cabinet;
     this.zoomProgress = 0;

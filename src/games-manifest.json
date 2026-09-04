@@ -273,5 +273,16 @@
     "description": "Rockstar's legendary top-down crime epic! Steal cars, outrun police, answer payphones, and rule the city in 60 FPS WebAssembly.",
     "tech": ["WASM EmulatorJS", "Rockstar Games", "Open World"],
     "badgeClass": "btn-gta"
+  },
+  {
+    "id": "classic-doom",
+    "name": "Classic DOOM",
+    "icon": "🔥",
+    "category": "action",
+    "unit": "KILLS",
+    "url": "https://marcuscaiado.github.io/classic-doom/",
+    "description": "The father of FPS! Rip and tear through phobos base with shotgun, chainsaw, rocket launcher and BFG9000 in 60 FPS WebAssembly.",
+    "tech": ["WASM EmulatorJS", "id Software", "FPS 60 FPS"],
+    "badgeClass": "btn-doom"
   }
 ]
