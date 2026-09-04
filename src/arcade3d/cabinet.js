@@ -481,6 +481,27 @@ export function createArcadeCabinet(game, position, rotationY = 0) {
         }
         floorGlow.material.opacity = 0.35;
       }
+    },
+    dispose() {
+      this.clearLiveStream();
+      if (screenTex) screenTex.dispose();
+      if (marqueeTex) marqueeTex.dispose();
+      this.group.traverse(child => {
+        if (child.isMesh) {
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) {
+            if (Array.isArray(child.material)) {
+              child.material.forEach(m => {
+                if (m.map) m.map.dispose();
+                m.dispose();
+              });
+            } else {
+              if (child.material.map) child.material.map.dispose();
+              child.material.dispose();
+            }
+          }
+        }
+      });
     }
   };
 }
