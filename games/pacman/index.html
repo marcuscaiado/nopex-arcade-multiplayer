@@ -30,7 +30,7 @@
       background: #070914;
       border: 3px solid #ffd32a;
       border-radius: 16px;
-      padding: 12px 16px 16px 16px;
+      padding: 12px 16px 14px 16px;
       box-shadow: 0 0 35px rgba(255, 211, 42, 0.35), inset 0 0 20px rgba(0, 0, 0, 0.8);
       max-width: 98vw;
       max-height: 98vh;
@@ -97,7 +97,7 @@
     }
 
     .fruit-icon {
-      font-size: 14px;
+      font-size: 16px;
     }
 
     /* Floating Touch D-Pad for Mobile */
@@ -117,7 +117,7 @@
       .t-right { grid-column: 3; grid-row: 2; }
     }
 
-    /* Start / Game Over Overlay */
+    /* Start / Level Win / Game Over Overlay */
     #start-overlay {
       position: absolute;
       inset: 0;
@@ -136,6 +136,8 @@
       color: #ffd32a;
       font-size: 18px;
       text-shadow: 0 0 12px #ffd32a;
+      text-align: center;
+      line-height: 1.4;
     }
 
     .start-prompt {
@@ -146,7 +148,7 @@
 
     .start-btn {
       font-family: 'Press Start 2P', monospace;
-      font-size: 12px;
+      font-size: 11px;
       background: #ffd32a;
       color: #000;
       border: none;
@@ -173,6 +175,10 @@
         <span class="score-title">1UP</span>
         <span id="score-display" class="score-val">00</span>
       </div>
+      <div class="score-group" style="text-align: center;">
+        <span class="round-title" style="color: #ffd32a; font-size: 9px;">FASE</span>
+        <span id="level-display" class="round-val" style="color: #00f5ff; font-size: 13px; font-weight: bold;">1</span>
+      </div>
       <div class="score-group" style="text-align: right;">
         <span class="hi-score-title">HIGH SCORE</span>
         <span id="high-score-display" class="hi-score-val">10000</span>
@@ -182,13 +188,13 @@
     <div id="canvas-wrap">
       <canvas id="pacman-canvas" width="448" height="496"></canvas>
       <div id="start-overlay">
-        <div class="start-title">PAC-MAN 1980</div>
-        <div style="font-size: 9px; color: #00f5ff; text-align: center; line-height: 1.6;">
-          NAMCO ORIGINAL CLASSIC<br>
-          WAKA WAKA • POWER PELLETS
+        <div class="start-title" id="overlay-title">PAC-MAN 1980</div>
+        <div id="overlay-desc" style="font-size: 9px; color: #00f5ff; text-align: center; line-height: 1.6;">
+          DIFICULDADE PROGRESSIVA<br>
+          FASE 1: RITMO SUAVE • COLETE OS PONTOS
         </div>
-        <button id="start-btn" class="start-btn">JOGAR [WASD / ENTER]</button>
-        <div class="start-prompt">PRESSIONE QUALQUER TECLA</div>
+        <button id="start-btn" class="start-btn">JOGAR [ENTER / TOQUE]</button>
+        <div class="start-prompt" id="overlay-prompt">PRESSIONE QUALQUER TECLA</div>
       </div>
     </div>
 
@@ -197,8 +203,8 @@
         <span class="life-icon"></span>
         <span class="life-icon"></span>
       </div>
-      <div>1 COIN 1 PLAY</div>
-      <div class="fruit-icon">🍒</div>
+      <div id="level-status-tip" style="color: #00f5ff; font-size: 9px; letter-spacing: 1px;">FASE 1 • MAIS SUAVE 🍒</div>
+      <div class="fruit-icon" id="fruit-display">🍒</div>
     </div>
 
     <div class="touch-controls">
@@ -235,8 +241,8 @@
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
           osc.type = 'triangle';
-          const startFreq = this.wakaState === 0 ? 340 : 480;
-          const endFreq = this.wakaState === 0 ? 480 : 340;
+          const startFreq = this.wakaState === 0 ? 320 : 460;
+          const endFreq = this.wakaState === 0 ? 460 : 320;
           osc.frequency.setValueAtTime(startFreq, now);
           osc.frequency.exponentialRampToValueAtTime(endFreq, now + 0.08);
           gain.gain.setValueAtTime(0.12, now);
@@ -255,13 +261,31 @@
           const gain = this.ctx.createGain();
           osc.type = 'sawtooth';
           osc.frequency.setValueAtTime(200, now);
-          osc.frequency.exponentialRampToValueAtTime(800, now + 0.35);
+          osc.frequency.exponentialRampToValueAtTime(850, now + 0.35);
           gain.gain.setValueAtTime(0.2, now);
           gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start(now);
           osc.stop(now + 0.35);
+        } catch (e) {}
+      }
+      playFruit() {
+        if (!this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(600, now);
+          osc.frequency.setValueAtTime(800, now + 0.08);
+          osc.frequency.setValueAtTime(1200, now + 0.16);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.28);
         } catch (e) {}
       }
       playDeath() {
@@ -279,6 +303,31 @@
           gain.connect(this.ctx.destination);
           osc.start(now);
           osc.stop(now + 0.9);
+        } catch (e) {}
+      }
+      playLevelClear() {
+        if (!this.ctx) return;
+        try {
+          const notes = [
+            { f: 523.25, d: 0.12 }, // C5
+            { f: 659.25, d: 0.12 }, // E5
+            { f: 783.99, d: 0.12 }, // G5
+            { f: 1046.50, d: 0.35 } // C6
+          ];
+          let t = this.ctx.currentTime + 0.05;
+          notes.forEach(n => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(n.f, t);
+            gain.gain.setValueAtTime(0.2, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + n.d);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(t);
+            osc.stop(t + n.d);
+            t += n.d;
+          });
         } catch (e) {}
       }
       playIntro() {
@@ -350,15 +399,71 @@
     const COLS = 28;
     const ROWS = 31;
 
+    // --- LEVEL DIFFICULTY SPECIFICATIONS ---
+    // Smooth, gradual scaling: Level 1 is forgiving & accessible; difficulty builds level-by-level
+    const LEVEL_SPECS = [
+      // Level 1: Beginner-friendly, gentle ghost speed, long frightened time, scatter openings
+      { level: 1, pacSpeed: 1.50, ghostSpeed: 1.10, tunnelSpeed: 0.60, frightSpeed: 0.70, frightTime: 480, pinkyDelay: 120, inkyDots: 30, clydeDots: 60, fruit: '🍒', fruitPts: 100, scatterTime: 480, chaseTime: 1200 },
+      // Level 2: Slightly faster ghosts, strawberry bonus
+      { level: 2, pacSpeed: 1.60, ghostSpeed: 1.25, tunnelSpeed: 0.65, frightSpeed: 0.75, frightTime: 360, pinkyDelay: 90,  inkyDots: 20, clydeDots: 45, fruit: '🍓', fruitPts: 300, scatterTime: 420, chaseTime: 1300 },
+      // Level 3: Balanced classic arcade feel
+      { level: 3, pacSpeed: 1.70, ghostSpeed: 1.40, tunnelSpeed: 0.70, frightSpeed: 0.80, frightTime: 280, pinkyDelay: 60,  inkyDots: 10, clydeDots: 30, fruit: '🍊', fruitPts: 500, scatterTime: 360, chaseTime: 1400 },
+      // Level 4: Faster ghosts, shorter scatter windows
+      { level: 4, pacSpeed: 1.75, ghostSpeed: 1.52, tunnelSpeed: 0.75, frightSpeed: 0.85, frightTime: 200, pinkyDelay: 30,  inkyDots: 5,  clydeDots: 20, fruit: '🍊', fruitPts: 500, scatterTime: 300, chaseTime: 1500 },
+      // Level 5: Experienced arcade pace
+      { level: 5, pacSpeed: 1.80, ghostSpeed: 1.62, tunnelSpeed: 0.80, frightSpeed: 0.90, frightTime: 150, pinkyDelay: 15,  inkyDots: 0,  clydeDots: 10, fruit: '🍎', fruitPts: 700, scatterTime: 240, chaseTime: 1600 },
+      // Level 6+: Master tier
+      { level: 6, pacSpeed: 1.85, ghostSpeed: 1.72, tunnelSpeed: 0.85, frightSpeed: 0.95, frightTime: 100, pinkyDelay: 0,   inkyDots: 0,  clydeDots: 0,  fruit: '🍈', fruitPts: 1000, scatterTime: 180, chaseTime: 1800 }
+    ];
+
+    function getLevelSpec(lvl) {
+      if (lvl <= LEVEL_SPECS.length) {
+        return LEVEL_SPECS[lvl - 1];
+      }
+      const base = LEVEL_SPECS[LEVEL_SPECS.length - 1];
+      const diff = lvl - 6;
+      const fruitTypes = ['🍎', '🍈', '🍈', '🚀', '🚀', '🔔', '🔔', '🔑'];
+      const fruitPoints = [700, 1000, 1000, 2000, 2000, 3000, 3000, 5000];
+      const fIdx = Math.min(fruitTypes.length - 1, Math.floor(diff / 2) + 1);
+      return {
+        level: lvl,
+        pacSpeed: Math.min(2.0, base.pacSpeed + diff * 0.02),
+        ghostSpeed: Math.min(1.95, base.ghostSpeed + diff * 0.03),
+        tunnelSpeed: Math.min(1.1, base.tunnelSpeed + diff * 0.02),
+        frightSpeed: Math.min(1.2, base.frightSpeed + diff * 0.02),
+        frightTime: Math.max(45, base.frightTime - diff * 12),
+        pinkyDelay: 0,
+        inkyDots: 0,
+        clydeDots: 0,
+        fruit: fruitTypes[fIdx],
+        fruitPts: fruitPoints[fIdx],
+        scatterTime: Math.max(120, base.scatterTime - diff * 10),
+        chaseTime: 1800
+      };
+    }
+
+    let currentLevel = 1;
+    let currentLevelSpec = getLevelSpec(1);
+
     let score = 0;
     let highScore = parseInt(localStorage.getItem('PACMAN_HI_SCORE') || '10000');
     let lives = 3;
-    let gameState = 'START'; // START, PLAYING, DYING, GAMEOVER, WIN
+    let gameState = 'START'; // START, PLAYING, DYING, GAMEOVER, LEVEL_WIN
     let totalDots = 0;
     let dotsEaten = 0;
     let frightenedTimer = 0;
     let ghostMultiplier = 1;
 
+    let globalGhostMode = 'SCATTER'; // 'SCATTER' or 'CHASE'
+    let waveTimer = 0;
+
+    // Bonus Fruit
+    let fruitActive = false;
+    let fruitTimer = 0;
+    let fruitEatenScore = null;
+    let fruitScoreTimer = 0;
+
+    let levelWinTimer = 0;
     let grid = [];
 
     function isWalkable(col, row, isGhost = false, isGhostEaten = false) {
@@ -367,7 +472,7 @@
       const cell = grid[row][col];
       if (cell === 1) return false; // wall
       if (cell === 4) {
-        // Door
+        // Ghost House Door
         return isGhostEaten; // Only returning ghost eyes can enter door freely from outside
       }
       if (cell === 5) {
@@ -394,14 +499,14 @@
         this.reset();
       }
       reset() {
-        // Row 23, Col 13 is exact open passage below ghost house
+        // Row 23, Col 13 is open passage directly below ghost house
         this.x = 13 * TILE;
         this.y = 23 * TILE;
         this.dirX = -1;
         this.dirY = 0;
         this.nextDirX = -1;
         this.nextDirY = 0;
-        this.speed = 2; // Clean integer divisor of 16!
+        this.accum = 0;
         this.mouthAngle = 0.2;
         this.mouthDir = 1;
         this.angle = Math.PI;
@@ -409,50 +514,96 @@
       update() {
         if (gameState !== 'PLAYING') return;
 
-        // 1. Instant 180-degree reverse at ANY pixel
-        if (this.nextDirX === -this.dirX && this.nextDirY === -this.dirY && (this.nextDirX !== 0 || this.nextDirY !== 0)) {
-          this.dirX = this.nextDirX;
-          this.dirY = this.nextDirY;
-        }
+        const effectiveSpeed = currentLevelSpec.pacSpeed;
+        this.accum += effectiveSpeed;
+        const steps = Math.floor(this.accum);
+        this.accum -= steps;
 
-        // 2. Perpendicular turning with snap-to-tile
-        const tileCol = Math.round(this.x / TILE);
-        const tileRow = Math.round(this.y / TILE);
-        const distToCenter = Math.hypot(this.x - tileCol * TILE, this.y - tileRow * TILE);
+        for (let s = 0; s < steps; s++) {
+          // 1. Instant 180-degree reversal check
+          if (this.nextDirX === -this.dirX && this.nextDirY === -this.dirY && (this.nextDirX !== 0 || this.nextDirY !== 0)) {
+            this.dirX = this.nextDirX;
+            this.dirY = this.nextDirY;
+          }
 
-        if ((this.nextDirX !== this.dirX || this.nextDirY !== this.dirY) && (this.nextDirX !== 0 || this.nextDirY !== 0)) {
-          if (distToCenter <= this.speed) {
-            // Check if desired tile is walkable
-            if (isWalkable(tileCol + this.nextDirX, tileRow + this.nextDirY, false)) {
-              this.x = tileCol * TILE;
-              this.y = tileRow * TILE;
-              this.dirX = this.nextDirX;
-              this.dirY = this.nextDirY;
+          // 2. Cornering buffer (within 4 pixels of tile center, snap and turn)
+          if ((this.nextDirX !== this.dirX || this.nextDirY !== this.dirY) && (this.nextDirX !== 0 || this.nextDirY !== 0)) {
+            const targetCol = Math.round(this.x / TILE);
+            const targetRow = Math.round(this.y / TILE);
+            const diffX = this.x - targetCol * TILE;
+            const diffY = this.y - targetRow * TILE;
+
+            if (Math.abs(diffX) <= 4 && Math.abs(diffY) <= 4) {
+              if (isWalkable(targetCol + this.nextDirX, targetRow + this.nextDirY, false)) {
+                this.x = targetCol * TILE;
+                this.y = targetRow * TILE;
+                this.dirX = this.nextDirX;
+                this.dirY = this.nextDirY;
+              }
             }
           }
-        }
 
-        // 3. Wall collision check ahead in current direction
-        if (this.dirX !== 0 || this.dirY !== 0) {
+          // 3. Wall collision check ahead at exact tile boundary
           if (this.x % TILE === 0 && this.y % TILE === 0) {
-            const curCol = this.x / TILE;
-            const curRow = this.y / TILE;
-            if (!isWalkable(curCol + this.dirX, curRow + this.dirY, false)) {
+            const col = this.x / TILE;
+            const row = this.y / TILE;
+            if (!isWalkable(col + this.dirX, row + this.dirY, false)) {
               this.dirX = 0;
               this.dirY = 0;
             }
           }
+
+          // 4. Move 1 pixel
+          this.x += this.dirX;
+          this.y += this.dirY;
+
+          // 5. Wrap tunnel at row 14
+          if (this.x < -TILE) this.x = COLS * TILE;
+          if (this.x > COLS * TILE) this.x = -TILE;
+
+          // 6. Dot / Power Pellet collection check at tile centers
+          if (this.x % TILE === 0 && this.y % TILE === 0) {
+            const centerCol = this.x / TILE;
+            const centerRow = this.y / TILE;
+            if (centerCol >= 0 && centerCol < COLS && centerRow >= 0 && centerRow < ROWS) {
+              const cell = grid[centerRow][centerCol];
+              if (cell === 2) {
+                grid[centerRow][centerCol] = 0;
+                score += 10;
+                dotsEaten++;
+                snd.playWaka();
+                updateScores();
+                checkFruitTrigger();
+              } else if (cell === 3) {
+                grid[centerRow][centerCol] = 0;
+                score += 50;
+                dotsEaten++;
+                frightenedTimer = currentLevelSpec.frightTime;
+                ghostMultiplier = 1;
+                ghosts.forEach(g => g.makeFrightened());
+                snd.playWaka();
+                updateScores();
+                checkFruitTrigger();
+              }
+            }
+          }
+
+          // 7. Bonus Fruit Collision
+          if (fruitActive) {
+            const fruitX = 13.5 * TILE;
+            const fruitY = 17 * TILE;
+            if (Math.hypot((this.x + TILE / 2) - fruitX, (this.y + TILE / 2) - fruitY) < 14) {
+              fruitActive = false;
+              score += currentLevelSpec.fruitPts;
+              fruitEatenScore = `+${currentLevelSpec.fruitPts}`;
+              fruitScoreTimer = 120; // 2 seconds
+              snd.playFruit();
+              updateScores();
+            }
+          }
         }
 
-        // 4. Move forward
-        this.x += this.dirX * this.speed;
-        this.y += this.dirY * this.speed;
-
-        // 5. Wrap-around tunnel at row 14
-        if (this.x < -TILE) this.x = COLS * TILE;
-        if (this.x > COLS * TILE) this.x = -TILE;
-
-        // 6. Mouth animation
+        // Mouth animation
         if (this.dirX !== 0 || this.dirY !== 0) {
           this.mouthAngle += 0.05 * this.mouthDir;
           if (this.mouthAngle > 0.45 || this.mouthAngle < 0.02) this.mouthDir *= -1;
@@ -463,38 +614,9 @@
         else if (this.dirY > 0) this.angle = Math.PI / 2;
         else if (this.dirY < 0) this.angle = -Math.PI / 2;
 
-        // 7. Dot collection
-        const centerCol = Math.floor((this.x + TILE / 2) / TILE);
-        const centerRow = Math.floor((this.y + TILE / 2) / TILE);
-        if (centerCol >= 0 && centerCol < COLS && centerRow >= 0 && centerRow < ROWS) {
-          const cell = grid[centerRow][centerCol];
-          if (cell === 2) {
-            grid[centerRow][centerCol] = 0;
-            score += 10;
-            dotsEaten++;
-            snd.playWaka();
-            updateScores();
-          } else if (cell === 3) {
-            grid[centerRow][centerCol] = 0;
-            score += 50;
-            dotsEaten++;
-            frightenedTimer = 420; // ~7 seconds
-            ghostMultiplier = 1;
-            ghosts.forEach(g => g.makeFrightened());
-            snd.playWaka();
-            updateScores();
-          }
-        }
-
-        // 8. Win level
-        if (dotsEaten >= totalDots && totalDots > 0) {
-          gameState = 'WIN';
-          setTimeout(() => {
-            resetGrid();
-            pacman.reset();
-            ghosts.forEach(g => g.reset());
-            gameState = 'PLAYING';
-          }, 1800);
+        // Level Win Trigger
+        if (dotsEaten >= totalDots && totalDots > 0 && gameState === 'PLAYING') {
+          triggerLevelWin();
         }
       }
       draw() {
@@ -521,17 +643,18 @@
         this.startRow = startRow;
         this.scatterCol = scatterCol;
         this.scatterRow = scatterRow;
-        this.releaseDelay = releaseDelay; // in frames (60fps)
+        this.releaseDelay = releaseDelay;
+        this.accum = 0;
         this.reset();
       }
       reset() {
         this.x = this.startCol * TILE;
         this.y = this.startRow * TILE;
-        this.speed = 2;
         this.dirX = 0;
         this.dirY = 0;
         this.isFrightened = false;
         this.isEaten = false;
+        this.accum = 0;
         this.releaseTimer = this.releaseDelay;
         this.bobDir = 1;
 
@@ -550,17 +673,40 @@
           this.dirY *= -1;
         }
       }
+      getEffectiveSpeed() {
+        if (this.isEaten) return 3.0; // Eyes return quickly to base
+
+        const col = Math.round(this.x / TILE);
+        const row = Math.round(this.y / TILE);
+
+        // Side tunnel slowdown (row 14, wrap-around corridors)
+        if (row === 14 && (col <= 5 || col >= 22)) {
+          return currentLevelSpec.tunnelSpeed;
+        }
+
+        if (this.isFrightened) {
+          return currentLevelSpec.frightSpeed;
+        }
+
+        return currentLevelSpec.ghostSpeed;
+      }
       update() {
         if (gameState !== 'PLAYING') return;
 
         // 1. Ghost House logic
         if (this.state === 'HOUSE') {
-          if (this.releaseTimer > 0) {
-            this.releaseTimer--;
+          // Check release trigger based on level delays or dots eaten
+          let canRelease = false;
+          if (this.name === 'Pinky' && (this.releaseTimer <= 0 || dotsEaten >= 0)) canRelease = true;
+          if (this.name === 'Inky' && (dotsEaten >= currentLevelSpec.inkyDots || this.releaseTimer <= 0)) canRelease = true;
+          if (this.name === 'Clyde' && (dotsEaten >= currentLevelSpec.clydeDots || this.releaseTimer <= 0)) canRelease = true;
+
+          if (!canRelease) {
+            if (this.releaseTimer > 0) this.releaseTimer--;
             // Gently bob up and down inside house
-            this.y += this.bobDir * 0.5;
-            if (this.y > 14.5 * TILE) this.bobDir = -1;
-            if (this.y < 13.5 * TILE) this.bobDir = 1;
+            this.y += this.bobDir * 0.4;
+            if (this.y > 14.4 * TILE) this.bobDir = -1;
+            if (this.y < 13.6 * TILE) this.bobDir = 1;
             return;
           } else {
             this.state = 'EXITING';
@@ -574,7 +720,7 @@
             this.x += this.x < doorCenterX ? 1 : -1;
           } else {
             this.x = doorCenterX;
-            this.y -= 1.5;
+            this.y -= 1.0;
             if (this.y <= 11 * TILE) {
               this.y = 11 * TILE;
               this.state = 'OUTSIDE';
@@ -585,144 +731,147 @@
           return;
         }
 
-        // 3. Outside maze movement
-        const spd = this.isEaten ? 4 : (this.isFrightened ? 1 : this.speed);
+        // 3. Outside maze movement with integer sub-pixel stepping
+        const speed = this.getEffectiveSpeed();
+        this.accum += speed;
+        const steps = Math.floor(this.accum);
+        this.accum -= steps;
 
-        // Turn decisions at tile centers
-        if (this.x % TILE === 0 && this.y % TILE === 0) {
-          const col = Math.round(this.x / TILE);
-          const row = Math.round(this.y / TILE);
+        for (let s = 0; s < steps; s++) {
+          // Navigation decisions at tile centers
+          if (this.x % TILE === 0 && this.y % TILE === 0) {
+            const col = this.x / TILE;
+            const row = this.y / TILE;
 
-          // If eaten and reached above ghost door, re-enter and revive
-          if (this.isEaten && col === 13 && row === 11) {
-            this.isEaten = false;
-            this.isFrightened = false;
-            this.state = 'EXITING';
-          }
-
-          const dirs = [
-            { x: 0, y: -1 }, // Up
-            { x: -1, y: 0 }, // Left
-            { x: 0, y: 1 },  // Down
-            { x: 1, y: 0 }   // Right
-          ];
-
-          const validMoves = [];
-          dirs.forEach(d => {
-            // Cannot 180 reverse unless trapped or just frightened
-            if (d.x === -this.dirX && d.y === -this.dirY) return;
-            const nc = col + d.x;
-            const nr = row + d.y;
-            if (isWalkable(nc, nr, true, this.isEaten)) {
-              validMoves.push(d);
+            // If eaten and reached entrance, revive!
+            if (this.isEaten && col === 13 && row === 11) {
+              this.isEaten = false;
+              this.isFrightened = false;
+              this.state = 'EXITING';
+              return;
             }
-          });
 
-          // Fallback if dead-end: allow 180 reverse
-          if (validMoves.length === 0) {
+            const dirs = [
+              { x: 0, y: -1 }, // Up
+              { x: -1, y: 0 }, // Left
+              { x: 0, y: 1 },  // Down
+              { x: 1, y: 0 }   // Right
+            ];
+
+            const validMoves = [];
             dirs.forEach(d => {
-              if (isWalkable(col + d.x, row + d.y, true, this.isEaten)) {
+              if (d.x === -this.dirX && d.y === -this.dirY) return; // No 180 reverse
+              const nc = col + d.x;
+              const nr = row + d.y;
+              if (isWalkable(nc, nr, true, this.isEaten)) {
                 validMoves.push(d);
               }
             });
-          }
 
-          if (validMoves.length > 0) {
-            if (this.isFrightened && !this.isEaten) {
-              // Random move
-              const pick = validMoves[Math.floor(Math.random() * validMoves.length)];
-              this.dirX = pick.x;
-              this.dirY = pick.y;
-            } else {
-              // Target calculation
-              let targetC = pacman.x / TILE;
-              let targetR = pacman.y / TILE;
-
-              if (this.isEaten) {
-                targetC = 13;
-                targetR = 11; // entrance
-              } else if (this.name === 'Pinky') {
-                targetC += pacman.dirX * 4;
-                targetR += pacman.dirY * 4;
-              } else if (this.name === 'Inky') {
-                const b = ghosts[0];
-                targetC = targetC * 2 - (b.x / TILE);
-                targetR = targetR * 2 - (b.y / TILE);
-              } else if (this.name === 'Clyde') {
-                const distToPac = Math.hypot(col - targetC, row - targetR);
-                if (distToPac < 8) {
-                  targetC = this.scatterCol;
-                  targetR = this.scatterRow;
-                }
-              }
-
-              let bestMove = validMoves[0];
-              let bestDist = Infinity;
-              validMoves.forEach(m => {
-                const dist = Math.hypot((col + m.x) - targetC, (row + m.y) - targetR);
-                if (dist < bestDist) {
-                  bestDist = dist;
-                  bestMove = m;
+            // Dead-end fallback
+            if (validMoves.length === 0) {
+              dirs.forEach(d => {
+                if (isWalkable(col + d.x, row + d.y, true, this.isEaten)) {
+                  validMoves.push(d);
                 }
               });
-              this.dirX = bestMove.x;
-              this.dirY = bestMove.y;
+            }
+
+            if (validMoves.length > 0) {
+              if (this.isFrightened && !this.isEaten) {
+                // Random turn when frightened
+                const pick = validMoves[Math.floor(Math.random() * validMoves.length)];
+                this.dirX = pick.x;
+                this.dirY = pick.y;
+              } else {
+                // Target Calculation
+                let targetC = pacman.x / TILE;
+                let targetR = pacman.y / TILE;
+
+                if (this.isEaten) {
+                  targetC = 13;
+                  targetR = 11;
+                } else if (globalGhostMode === 'SCATTER') {
+                  // Patrol designated corner in Scatter mode!
+                  targetC = this.scatterCol;
+                  targetR = this.scatterRow;
+                } else {
+                  // CHASE Mode
+                  if (this.name === 'Pinky') {
+                    targetC += pacman.dirX * 4;
+                    targetR += pacman.dirY * 4;
+                  } else if (this.name === 'Inky') {
+                    const b = ghosts[0];
+                    targetC = targetC * 2 - (b.x / TILE);
+                    targetR = targetR * 2 - (b.y / TILE);
+                  } else if (this.name === 'Clyde') {
+                    const distToPac = Math.hypot(col - targetC, row - targetR);
+                    if (distToPac < 8) {
+                      targetC = this.scatterCol;
+                      targetR = this.scatterRow;
+                    }
+                  }
+                }
+
+                let bestMove = validMoves[0];
+                let bestDist = Infinity;
+                validMoves.forEach(m => {
+                  const dist = Math.hypot((col + m.x) - targetC, (row + m.y) - targetR);
+                  if (dist < bestDist) {
+                    bestDist = dist;
+                    bestMove = m;
+                  }
+                });
+                this.dirX = bestMove.x;
+                this.dirY = bestMove.y;
+              }
             }
           }
-        }
 
-        // Wall safety check before moving
-        const checkCol = Math.round((this.x + this.dirX * spd) / TILE);
-        const checkRow = Math.round((this.y + this.dirY * spd) / TILE);
-        if (this.dirX !== 0 || this.dirY !== 0) {
-          if (!isWalkable(checkCol, checkRow, true, this.isEaten)) {
-            // Snap to current tile center
-            this.x = Math.round(this.x / TILE) * TILE;
-            this.y = Math.round(this.y / TILE) * TILE;
-            this.dirX = 0;
-            this.dirY = 0;
-          }
-        }
+          this.x += this.dirX;
+          this.y += this.dirY;
 
-        this.x += this.dirX * spd;
-        this.y += this.dirY * spd;
+          // Wrap tunnel
+          if (this.x < -TILE) this.x = COLS * TILE;
+          if (this.x > COLS * TILE) this.x = -TILE;
 
-        // Wrap tunnel
-        if (this.x < -TILE) this.x = COLS * TILE;
-        if (this.x > COLS * TILE) this.x = -TILE;
-
-        // Collision with Pacman
-        const dist = Math.hypot((this.x + TILE / 2) - (pacman.x + TILE / 2), (this.y + TILE / 2) - (pacman.y + TILE / 2));
-        if (dist < 12) {
-          if (this.isFrightened && !this.isEaten) {
-            this.isEaten = true;
-            this.isFrightened = false;
-            const pts = 200 * ghostMultiplier;
-            score += pts;
-            ghostMultiplier *= 2;
-            snd.playGhostEat();
-            updateScores();
-          } else if (!this.isEaten) {
-            // Player loses a life
-            snd.playDeath();
-            gameState = 'DYING';
-            lives--;
-            updateLivesDisplay();
-            setTimeout(() => {
-              if (lives <= 0) {
-                gameState = 'GAMEOVER';
-                document.getElementById('start-overlay').style.display = 'flex';
-                document.getElementById('start-overlay').querySelector('.start-title').textContent = 'GAME OVER';
-                document.getElementById('start-btn').textContent = 'JOGAR NOVAMENTE [ENTER]';
-                if (window.parent && window.parent.ArcadeLeaderboard) {
-                  window.parent.ArcadeLeaderboard.submitScore('classic-pacman', score);
+          // Collision with Pacman
+          const dist = Math.hypot((this.x + TILE / 2) - (pacman.x + TILE / 2), (this.y + TILE / 2) - (pacman.y + TILE / 2));
+          if (dist < 12) {
+            if (this.isFrightened && !this.isEaten) {
+              this.isEaten = true;
+              this.isFrightened = false;
+              const pts = 200 * ghostMultiplier;
+              score += pts;
+              ghostMultiplier *= 2;
+              fruitEatenScore = `+${pts}`;
+              fruitScoreTimer = 60;
+              snd.playGhostEat();
+              updateScores();
+            } else if (!this.isEaten) {
+              // Player loses a life
+              snd.playDeath();
+              gameState = 'DYING';
+              lives--;
+              updateLivesDisplay();
+              setTimeout(() => {
+                if (lives <= 0) {
+                  gameState = 'GAMEOVER';
+                  document.getElementById('start-overlay').style.display = 'flex';
+                  document.getElementById('overlay-title').textContent = 'GAME OVER';
+                  document.getElementById('overlay-desc').innerHTML = `PONTUAÇÃO FINAL: ${score}<br>FASE ALCANÇADA: ${currentLevel}`;
+                  document.getElementById('start-btn').textContent = 'JOGAR NOVAMENTE [ENTER]';
+                  if (window.parent && window.parent.ArcadeLeaderboard) {
+                    window.parent.ArcadeLeaderboard.submitScore('classic-pacman', score);
+                  }
+                } else {
+                  pacman.reset();
+                  ghosts.forEach(g => g.reset());
+                  gameState = 'PLAYING';
                 }
-              } else {
-                pacman.reset();
-                ghosts.forEach(g => g.reset());
-                gameState = 'PLAYING';
-              }
-            }, 1200);
+              }, 1200);
+              return;
+            }
           }
         }
       }
@@ -772,9 +921,9 @@
     const pacman = new Pacman();
     const ghosts = [
       new Ghost('Blinky', '#ff0000', 13, 11, 25, 0, 0),     // Outside door
-      new Ghost('Pinky',  '#ffb8ff', 13, 14, 2, 0, 60),     // House, exits ~1s
-      new Ghost('Inky',   '#00ffff', 11, 14, 27, 31, 240),  // House, exits ~4s
-      new Ghost('Clyde',  '#ffb852', 15, 14, 0, 31, 420)    // House, exits ~7s
+      new Ghost('Pinky',  '#ffb8ff', 13, 14, 2, 0, 120),    // House, exits ~2s on Level 1
+      new Ghost('Inky',   '#00ffff', 11, 14, 27, 31, 600),  // House, waits for 30 dots
+      new Ghost('Clyde',  '#ffb852', 15, 14, 0, 31, 1200)   // House, waits for 60 dots
     ];
 
     window.pacman = pacman;
@@ -784,6 +933,7 @@
       score,
       highScore,
       lives,
+      currentLevel,
       dotsEaten,
       totalDots,
       pacmanX: pacman.x,
@@ -791,6 +941,41 @@
       pacmanDirX: pacman.dirX,
       pacmanDirY: pacman.dirY
     });
+
+    function checkFruitTrigger() {
+      if ((dotsEaten === 70 || dotsEaten === 170) && !fruitActive) {
+        fruitActive = true;
+        fruitTimer = 600; // 10 seconds
+      }
+    }
+
+    function triggerLevelWin() {
+      gameState = 'LEVEL_WIN';
+      levelWinTimer = 160; // ~2.6 seconds
+      snd.playLevelClear();
+    }
+
+    function initLevel(lvl) {
+      currentLevel = lvl;
+      currentLevelSpec = getLevelSpec(lvl);
+      document.getElementById('level-display').textContent = lvl;
+      document.getElementById('fruit-display').textContent = currentLevelSpec.fruit;
+      document.getElementById('level-status-tip').textContent = `FASE ${lvl} • ${currentLevelSpec.fruit}`;
+
+      globalGhostMode = 'SCATTER';
+      waveTimer = 0;
+      fruitActive = false;
+      fruitTimer = 0;
+      frightenedTimer = 0;
+      fruitEatenScore = null;
+
+      resetGrid();
+      pacman.reset();
+      ghosts.forEach(g => {
+        g.releaseDelay = g.name === 'Pinky' ? currentLevelSpec.pinkyDelay : g.releaseDelay;
+        g.reset();
+      });
+    }
 
     function updateScores() {
       document.getElementById('score-display').textContent = String(score).padStart(2, '0');
@@ -814,6 +999,9 @@
       ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+      // Flash maze walls during level win celebration
+      const isWinFlash = gameState === 'LEVEL_WIN' && Math.floor(levelWinTimer / 12) % 2 === 0;
+
       // Draw Maze Walls & Pellets
       for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
@@ -823,9 +1011,9 @@
 
           if (type === 1) {
             // Wall
-            ctx.fillStyle = '#0022cc';
+            ctx.fillStyle = isWinFlash ? '#ffffff' : '#0022cc';
             ctx.fillRect(x, y, TILE, TILE);
-            ctx.fillStyle = '#000833';
+            ctx.fillStyle = isWinFlash ? '#00e5ff' : '#000833';
             ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
           } else if (type === 2) {
             // Dot
@@ -849,7 +1037,62 @@
         }
       }
 
-      if (frightenedTimer > 0) frightenedTimer--;
+      // Bonus Fruit drawing
+      if (fruitActive) {
+        fruitTimer--;
+        if (fruitTimer <= 0) {
+          fruitActive = false;
+        } else {
+          ctx.font = '16px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(currentLevelSpec.fruit, 14 * TILE, 17.5 * TILE);
+        }
+      }
+
+      // Floating score when eating ghost or fruit
+      if (fruitScoreTimer > 0) {
+        fruitScoreTimer--;
+        ctx.font = '10px "Press Start 2P", monospace';
+        ctx.fillStyle = '#00f5ff';
+        ctx.textAlign = 'center';
+        ctx.fillText(fruitEatenScore, 14 * TILE, 17.5 * TILE - (60 - fruitScoreTimer) * 0.2);
+      }
+
+      // Wave timer & Scatter/Chase mode alternating
+      if (frightenedTimer > 0) {
+        frightenedTimer--;
+      } else if (gameState === 'PLAYING') {
+        waveTimer++;
+        if (globalGhostMode === 'SCATTER' && waveTimer > currentLevelSpec.scatterTime) {
+          globalGhostMode = 'CHASE';
+          waveTimer = 0;
+          ghosts.forEach(g => { if (!g.isEaten && g.state === 'OUTSIDE') { g.dirX *= -1; g.dirY *= -1; } });
+        } else if (globalGhostMode === 'CHASE' && waveTimer > currentLevelSpec.chaseTime) {
+          globalGhostMode = 'SCATTER';
+          waveTimer = 0;
+          ghosts.forEach(g => { if (!g.isEaten && g.state === 'OUTSIDE') { g.dirX *= -1; g.dirY *= -1; } });
+        }
+      }
+
+      // Level Win Transition
+      if (gameState === 'LEVEL_WIN') {
+        levelWinTimer--;
+        ctx.font = '12px "Press Start 2P", monospace';
+        ctx.fillStyle = '#ffd32a';
+        ctx.textAlign = 'center';
+        ctx.fillText(`FASE ${currentLevel} CONCLUÍDA!`, canvas.width / 2, canvas.height / 2 - 10);
+        ctx.fillStyle = '#00f5ff';
+        ctx.font = '9px "Press Start 2P", monospace';
+        ctx.fillText(`BÔNUS +${currentLevel * 500} PTS`, canvas.width / 2, canvas.height / 2 + 15);
+
+        if (levelWinTimer <= 0) {
+          score += currentLevel * 500;
+          updateScores();
+          initLevel(currentLevel + 1);
+          gameState = 'PLAYING';
+        }
+      }
 
       pacman.update();
       pacman.draw();
@@ -859,7 +1102,34 @@
         g.draw();
       });
 
+      // Poll controller / gamepad
+      pollGamepad();
+
       requestAnimationFrame(render);
+    }
+
+    // --- GAMEPAD SUPPORT ---
+    let lastPadAxes = { x: 0, y: 0 };
+    function pollGamepad() {
+      const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+      for (const gp of gamepads) {
+        if (!gp) continue;
+        const up = gp.buttons[12]?.pressed || gp.axes[1] < -0.4;
+        const down = gp.buttons[13]?.pressed || gp.axes[1] > 0.4;
+        const left = gp.buttons[14]?.pressed || gp.axes[0] < -0.4;
+        const right = gp.buttons[15]?.pressed || gp.axes[0] > 0.4;
+        const start = gp.buttons[9]?.pressed || gp.buttons[0]?.pressed;
+
+        if (up && lastPadAxes.y !== -1) { handleInput(0, -1); lastPadAxes.y = -1; }
+        else if (down && lastPadAxes.y !== 1) { handleInput(0, 1); lastPadAxes.y = 1; }
+        else if (!up && !down) { lastPadAxes.y = 0; }
+
+        if (left && lastPadAxes.x !== -1) { handleInput(-1, 0); lastPadAxes.x = -1; }
+        else if (right && lastPadAxes.x !== 1) { handleInput(1, 0); lastPadAxes.x = 1; }
+        else if (!left && !right) { lastPadAxes.x = 0; }
+
+        if (start && gameState !== 'PLAYING') startGame();
+      }
     }
 
     function startGame() {
@@ -867,12 +1137,9 @@
       snd.playIntro();
       score = 0;
       lives = 3;
-      frightenedTimer = 0;
       updateScores();
       updateLivesDisplay();
-      resetGrid();
-      pacman.reset();
-      ghosts.forEach(g => g.reset());
+      initLevel(1);
       gameState = 'PLAYING';
       document.getElementById('start-overlay').style.display = 'none';
     }
@@ -880,7 +1147,7 @@
     // --- UNIVERSAL CONTROLS & AUTO-START ---
     function handleInput(dirX, dirY) {
       snd.init();
-      if (gameState !== 'PLAYING') {
+      if (gameState !== 'PLAYING' && gameState !== 'LEVEL_WIN' && gameState !== 'DYING') {
         startGame();
       }
       pacman.nextDirX = dirX;
@@ -899,7 +1166,7 @@
         e.preventDefault(); handleInput(1, 0);
       } else if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        if (gameState !== 'PLAYING') startGame();
+        if (gameState !== 'PLAYING' && gameState !== 'LEVEL_WIN' && gameState !== 'DYING') startGame();
       }
     });
 
@@ -912,7 +1179,7 @@
         else if (k === 'ArrowLeft' || k === 'a' || k === 'A') handleInput(-1, 0);
         else if (k === 'ArrowRight' || k === 'd' || k === 'D') handleInput(1, 0);
         else if (k === 'Enter' || k === ' ') {
-          if (gameState !== 'PLAYING') startGame();
+          if (gameState !== 'PLAYING' && gameState !== 'LEVEL_WIN' && gameState !== 'DYING') startGame();
         }
       }
     });
@@ -926,7 +1193,7 @@
       startGame();
     });
     canvas.addEventListener('click', () => {
-      if (gameState !== 'PLAYING') startGame();
+      if (gameState !== 'PLAYING' && gameState !== 'LEVEL_WIN' && gameState !== 'DYING') startGame();
     });
 
     // Touch Buttons
@@ -970,7 +1237,7 @@
     }, { passive: true });
 
     // Initial boot
-    resetGrid();
+    initLevel(1);
     updateScores();
     updateLivesDisplay();
     requestAnimationFrame(render);
