@@ -40,13 +40,25 @@ export class ArcadePlayOverlay {
       });
     }
 
+    // Universal message listener for games that postMessage to exit
+    window.addEventListener('message', (e) => {
+      if (e.data && (
+        e.data.type === 'CLOSE_ARCADE_GAME' ||
+        e.data.type === 'ARCADE_CLOSE' ||
+        e.data.type === 'ARCADE_EXIT' ||
+        e.data === 'closeArcade' ||
+        e.data === 'escape'
+      )) {
+        this.close();
+      }
+    });
+
+    // Parent window Escape listener (and key forwarder)
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && this.isOpen) {
-        if (document.fullscreenElement) {
-          document.exitFullscreen().catch(() => {});
-        } else {
-          this.close();
-        }
+        e.preventDefault();
+        e.stopPropagation();
+        this.close();
         return;
       }
 
@@ -60,7 +72,33 @@ export class ArcadePlayOverlay {
           } catch (err) {}
         }
       }
-    });
+    }, true);
+  }
+
+  attachIframeEscape() {
+    if (!this.iframe) return;
+    try {
+      const win = this.iframe.contentWindow;
+      const doc = this.iframe.contentDocument || win?.document;
+      const onEscape = (e) => {
+        if (e.key === 'Escape' || e.code === 'Escape' || e.keyCode === 27) {
+          e.preventDefault();
+          e.stopPropagation();
+          this.close();
+        }
+      };
+
+      if (win) {
+        win.removeEventListener('keydown', onEscape, true);
+        win.addEventListener('keydown', onEscape, true);
+      }
+      if (doc) {
+        doc.removeEventListener('keydown', onEscape, true);
+        doc.addEventListener('keydown', onEscape, true);
+      }
+    } catch (err) {
+      // Cross-origin restriction (fallback relies on postMessage and overlay buttons)
+    }
   }
 
   open(game) {
@@ -81,8 +119,14 @@ export class ArcadePlayOverlay {
         try {
           this.iframe.focus();
           if (this.iframe.contentWindow) this.iframe.contentWindow.focus();
+          this.attachIframeEscape();
         } catch (err) {}
       };
+
+      // Periodic check to ensure listener is attached once emulator finishes booting
+      setTimeout(() => this.attachIframeEscape(), 150);
+      setTimeout(() => this.attachIframeEscape(), 600);
+      setTimeout(() => this.attachIframeEscape(), 1500);
     }
 
     if (this.overlay) {
@@ -93,6 +137,7 @@ export class ArcadePlayOverlay {
           if (this.iframe) {
             this.iframe.focus();
             if (this.iframe.contentWindow) this.iframe.contentWindow.focus();
+            this.attachIframeEscape();
           }
         } catch (err) {}
       }, 100);
@@ -102,6 +147,11 @@ export class ArcadePlayOverlay {
   close() {
     if (!this.isOpen) return;
     this.isOpen = false;
+
+    // Immediately exit fullscreen if active
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
 
     playCabinetExit();
     musicManager.duck(false);

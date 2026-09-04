@@ -177,6 +177,14 @@ export class IdentityManager {
       this.hideModal();
       if (this.onReady) this.onReady(this.getIdentity());
     });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.modalEl && this.modalEl.style.display === 'flex') {
+        if (this.tag && this.tag.length >= 2) {
+          this.hideModal();
+        }
+      }
+    });
   }
 
   showModal() {

@@ -22,7 +22,7 @@ console.log('📌 Committing updates to master branch...');
 execSync('git add -A', { stdio: 'inherit' });
 const masterStatus = execSync('git status -s', { encoding: 'utf8' }).trim();
 if (masterStatus) {
-  execSync('git commit -m "feat(pacman): 🟡 balance speed & add progressive difficulty level-by-level with fruit bonuses, scatter cycles & tunnel slowdown"', { stdio: 'inherit' });
+  execSync('git commit -m "feat(hud): 🖥️ redesign desktop HUD, zero button overlap, tactile keycaps dock & universal ESC key exit across all games"', { stdio: 'inherit' });
   execSync('git push origin master', { stdio: 'inherit' });
 }
 
@@ -48,7 +48,7 @@ fs.writeFileSync('.nojekyll', '');
 execSync('git add -A', { stdio: 'inherit' });
 const status = execSync('git status -s', { encoding: 'utf8' }).trim();
 if (status) {
-  execSync('git commit -m "deploy: 🟡 balanced Pac-Man progressive difficulty & level progression"', { stdio: 'inherit' });
+  execSync('git commit -m "deploy: 🖥️ desktop HUD clarity, commands ribbon & universal ESC exit"', { stdio: 'inherit' });
   execSync('git push origin gh-pages', { stdio: 'inherit' });
 }
 

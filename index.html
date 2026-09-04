@@ -33,19 +33,10 @@
       <header class="nopex-hud-header">
         <div class="hud-left">
           <h1 class="nopex-logo">⚡ NOPEX ARCADE</h1>
-          <span class="hud-tag">3D VIRTUAL HUB</span>
-        </div>
-
-        <div class="hud-center">
-          <div class="hud-instructions">
-            <span class="inst-key">⌨️ WASD</span>
-            <span class="inst-text">Andar</span>
-            <span class="inst-sep">•</span>
-            <span class="inst-key">[ESPAÇO]</span>
-            <span class="inst-text">Pular</span>
-            <span class="inst-sep">•</span>
-            <span class="inst-key">[ENTER] / [E]</span>
-            <span class="inst-text">Jogar</span>
+          <span class="hud-tag">MULTIPLAYER P2P</span>
+          <div id="mp-hud-mount" class="hud-online-mount" title="Jogadores conectados no salão">
+            <span class="online-indicator-dot"></span>
+            <span id="mp-count-text">1/10 ONLINE</span>
           </div>
         </div>
 
@@ -104,8 +95,8 @@
               </optgroup>
             </select>
           </div>
-          <button id="arcade-tag-btn" class="hud-btn-2d" title="Alterar sua Tag ou Traje">
-            🏷️ TAG
+          <button id="arcade-tag-btn" class="hud-btn-action" title="Alterar sua Tag ou Traje (Atalho: Tecla T)">
+            🏷️ TAG <kbd class="hud-kbd-inline">T</kbd>
           </button>
           <a href="https://marcuscaiado.github.io/marcus-arcade/" target="_blank" rel="noopener noreferrer" class="hud-btn-2d" title="Abrir catálogo 2D clássico">
             📋 GRID 2D
@@ -129,9 +120,66 @@
           <button id="music-hud-play" class="hud-ctrl-btn hud-play-btn" title="Tocar / Pausar">▶</button>
           <button id="music-hud-next" class="hud-ctrl-btn" title="Próxima Faixa">⏭</button>
           <button id="music-hud-vol" class="hud-ctrl-btn" title="Mutar / Desmutar">🔊</button>
-          <button id="music-hud-expand" class="hud-expand-btn" title="Abrir Jukebox Completo">📻 JUKEBOX</button>
+          <button id="music-hud-expand" class="hud-expand-btn" title="Abrir Jukebox Completo (Atalho: Tecla J)">📻 JUKEBOX <kbd class="hud-kbd-inline">J</kbd></button>
         </div>
       </aside>
+
+      <!-- Desktop Cyberpunk Command Dock (Clear Mechanical Keycaps) -->
+      <nav id="arcade-commands-dock" class="arcade-commands-dock" aria-label="Comandos do Fliperama">
+        <div class="cmd-pill">
+          <div class="cmd-group">
+            <div class="cmd-keys">
+              <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
+            </div>
+            <span class="cmd-label">Andar</span>
+          </div>
+
+          <div class="cmd-sep"></div>
+
+          <div class="cmd-group">
+            <div class="cmd-keys">
+              <kbd>ESPAÇO</kbd>
+            </div>
+            <span class="cmd-label">Pular</span>
+          </div>
+
+          <div class="cmd-sep"></div>
+
+          <div class="cmd-group cmd-action">
+            <div class="cmd-keys">
+              <kbd class="kbd-neon">E</kbd> <span class="cmd-or">ou</span> <kbd class="kbd-neon">ENTER</kbd>
+            </div>
+            <span class="cmd-label">Jogar Máquina</span>
+          </div>
+
+          <div class="cmd-sep"></div>
+
+          <div class="cmd-group cmd-danger">
+            <div class="cmd-keys">
+              <kbd class="kbd-esc">ESC</kbd>
+            </div>
+            <span class="cmd-label">Sair do Jogo</span>
+          </div>
+
+          <div class="cmd-sep"></div>
+
+          <div class="cmd-group">
+            <div class="cmd-keys">
+              <kbd>J</kbd>
+            </div>
+            <span class="cmd-label">Jukebox</span>
+          </div>
+
+          <div class="cmd-sep"></div>
+
+          <div class="cmd-group">
+            <div class="cmd-keys">
+              <kbd>T</kbd>
+            </div>
+            <span class="cmd-label">Sua TAG</span>
+          </div>
+        </div>
+      </nav>
 
       <!-- Floating Hologram Card HUD when near an arcade cabinet -->
       <div id="arcade-3d-prompt" class="arcade-hologram-card">
@@ -143,8 +191,11 @@
         <div id="arcade-prompt-record" class="hologram-record">🏆 Recorde Mundial: Carregando...</div>
         <div class="hologram-action">
           <button class="hologram-play-btn" id="arcade-hologram-play-btn">
-            <span>PRESSIONE [ENTER] OU [E] PARA JOGAR</span> ➔
+            <span>PRESSIONE <kbd class="kbd-action">E</kbd> OU <kbd class="kbd-action">ENTER</kbd> PARA JOGAR</span> ➔
           </button>
+        </div>
+        <div class="hologram-esc-hint">
+          💡 Pressione <kbd class="kbd-hint-esc">ESC</kbd> a qualquer momento para sair da máquina e voltar ao salão.
         </div>
       </div>
 
@@ -192,8 +243,14 @@
     <!-- Arcade Game Playing Overlay (CRT Cabinet Zoom-in Frame) -->
     <div id="arcade-game-overlay" class="arcade-game-overlay" style="display: none;">
       <div class="arcade-overlay-bar">
-        <button id="arcade-overlay-back" class="overlay-back-btn">⬅️ VOLTAR AO FLIPERAMA (ESC)</button>
-        <div id="arcade-overlay-title" class="overlay-game-title">🎮 JOGO</div>
+        <button id="arcade-overlay-back" class="overlay-back-btn" title="Pressione ESC no teclado para sair e voltar ao fliperama">
+          <kbd class="esc-kbd">ESC</kbd>
+          <span>VOLTAR AO FLIPERAMA</span>
+        </button>
+        <div class="overlay-title-wrap">
+          <div id="arcade-overlay-title" class="overlay-game-title">🎮 JOGO</div>
+          <span class="overlay-esc-tip">Pressione <strong>ESC</strong> no teclado a qualquer momento para sair</span>
+        </div>
         <div class="overlay-actions">
           <button id="arcade-overlay-reload" class="overlay-icon-btn" title="Reiniciar Jogo">🔄</button>
           <button id="arcade-overlay-fullscreen" class="overlay-icon-btn" title="Tela Cheia">🔲</button>

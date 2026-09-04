@@ -33,13 +33,25 @@ export class ArcadeNetwork {
     let el = document.getElementById('mp-network-hud');
     if (el) el.remove();
 
+    // Prefer mounting inside header left pod if present to prevent overlapping right buttons
+    const mount = document.getElementById('mp-hud-mount');
+    if (mount) {
+      mount.innerHTML = `
+        <span class="online-indicator-dot"></span>
+        <span id="mp-count-text">1/10 ONLINE</span>
+      `;
+      this.hudEl = mount;
+      this.updateHudCount();
+      return;
+    }
+
     el = document.createElement('div');
     el.id = 'mp-network-hud';
     el.style.cssText = `
       position: absolute;
       top: 14px;
-      right: 14px;
-      z-index: 10000;
+      left: calc(230px + env(safe-area-inset-left, 0px));
+      z-index: 25;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -47,22 +59,8 @@ export class ArcadeNetwork {
     `;
 
     el.innerHTML = `
-      <div id="mp-players-badge" style="
-        background: rgba(14, 14, 24, 0.88);
-        border: 1px solid #00f5ff;
-        backdrop-filter: blur(10px);
-        padding: 6px 14px;
-        border-radius: 20px;
-        color: #00f5ff;
-        font-family: 'Press Start 2P', monospace;
-        font-size: 9px;
-        font-weight: 800;
-        box-shadow: 0 0 15px rgba(0, 245, 255, 0.3);
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      ">
-        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #00ff88; box-shadow: 0 0 8px #00ff88;"></span>
+      <div id="mp-players-badge" class="hud-online-mount">
+        <span class="online-indicator-dot"></span>
         <span id="mp-count-text">1/10 ONLINE</span>
       </div>
     `;

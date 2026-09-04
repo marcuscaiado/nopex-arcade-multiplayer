@@ -55,6 +55,29 @@ function initNopexArcade() {
     });
   }
 
+  // Global Keyboard Shortcuts (J: Jukebox, T: Tag Modal)
+  window.addEventListener('keydown', (e) => {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
+      return;
+    }
+
+    if (e.code === 'KeyT' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      const overlay = document.getElementById('arcade-game-overlay');
+      if (!overlay || overlay.style.display === 'none') {
+        identityManager.showModal();
+      }
+    }
+
+    if (e.code === 'KeyJ' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      const overlay = document.getElementById('arcade-game-overlay');
+      if (!overlay || overlay.style.display === 'none') {
+        if (engine && engine.jukeboxModal) {
+          engine.jukeboxModal.open();
+        }
+      }
+    }
+  });
+
   // Hook High Scores broadcast from local play
   if (window.ArcadeLeaderboard && window.ArcadeLeaderboard.submitScore) {
     const originalSubmit = window.ArcadeLeaderboard.submitScore.bind(window.ArcadeLeaderboard);
