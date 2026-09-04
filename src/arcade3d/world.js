@@ -271,6 +271,7 @@ export function buildArcadeWorld(scene, gamesManifest) {
   // ZONE 4: RETRO & ZEN VAULT (North Wall, Z = -26, Facing South)
   addCabinet('neon-drift-racer',    { x: -15, z: -26 }, 0);
   addCabinet('cyber-runner-3d',     { x: -9, z: -26 }, 0);
+  addCabinet('classic-pacman',      { x: -6, z: -26 }, 0);               // Iconic 1980 Pac-Man!
   addCabinet('neon-stack-3d',       { x: -3, z: -26 }, 0);
   addCabinet('super-mario',         { x: 0, z: -26 }, 0);
   addCabinet('neon-orbit-drift',    { x: 3, z: -26 }, 0);

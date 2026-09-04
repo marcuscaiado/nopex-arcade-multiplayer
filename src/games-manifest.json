@@ -284,5 +284,16 @@
     "description": "The father of FPS! Rip and tear through phobos base with shotgun, chainsaw, rocket launcher and BFG9000 in 60 FPS WebAssembly.",
     "tech": ["WASM EmulatorJS", "id Software", "FPS 60 FPS"],
     "badgeClass": "btn-doom"
+  },
+  {
+    "id": "classic-pacman",
+    "name": "Pac-Man (1980 Classic Arcade)",
+    "icon": "🟡",
+    "category": "retro",
+    "unit": "PTS",
+    "url": "games/pacman/index.html",
+    "description": "The immortal 1980 Namco arcade classic! Chomp dots, dodge Blinky, Pinky, Inky & Clyde, grab Power Pellets and rack up high scores.",
+    "tech": ["Canvas 2D", "Namco 1980", "Authentic Sound"],
+    "badgeClass": "btn-pacman"
   }
 ]
