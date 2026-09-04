@@ -192,6 +192,9 @@ export function createArcadeCabinet(game, position, rotationY = 0) {
   if (game.id === 'classic-doom') {
     theme = { primary: 0xff3838, secondary: 0xff9f1a, accent: 0xffd32a };
   }
+  if (game.id === 'classic-pacman') {
+    theme = { primary: 0xffd32a, secondary: 0x0066ff, accent: 0xffffff };
+  }
 
   // Materials with good ambient visibility
   const cabinetBodyMat = new THREE.MeshStandardMaterial({

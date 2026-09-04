@@ -22,7 +22,7 @@ console.log('📌 Committing updates to master branch...');
 execSync('git add -A', { stdio: 'inherit' });
 const masterStatus = execSync('git status -s', { encoding: 'utf8' }).trim();
 if (masterStatus) {
-  execSync('git commit -m "feat(mobile): dynamic floating virtual joystick, on-screen dpad, and tap-to-walk 3D navigation"', { stdio: 'inherit' });
+  execSync('git commit -m "feat(arcade): organize 28 arcade machines with Classic DOOM, Pac-Man, Tetris 3D, and Jukebox grand showcase"', { stdio: 'inherit' });
   execSync('git push origin master', { stdio: 'inherit' });
 }
 
@@ -47,7 +47,7 @@ fs.writeFileSync('.gitignore', 'node_modules/\n.temp*\n');
 execSync('git add -A', { stdio: 'inherit' });
 const status = execSync('git status -s', { encoding: 'utf8' }).trim();
 if (status) {
-  execSync('git commit -m "deploy: 🚀 Production bundle fix & Mobile walkable controls"', { stdio: 'inherit' });
+  execSync('git commit -m "deploy: 🚀 organized 28 arcade machines with Classic DOOM, Pac-Man, Tetris 3D, and Jukebox grand showcase"', { stdio: 'inherit' });
   execSync('git push origin gh-pages', { stdio: 'inherit' });
 }
 
