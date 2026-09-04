@@ -23,8 +23,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet">
     <script src="arcade-leaderboard.js"></script>
     <script src="arcade-difficulty.js"></script>
-    <script type="module" crossorigin src="./assets/index-BPZFVlRs.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-v97NmMjR.css">
+    <script type="module" crossorigin src="./assets/index-CETuDTiB.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BSzMld81.css">
   </head>
   <body>
     <!-- Fullscreen 3D Viewport -->
@@ -43,6 +43,9 @@
         </div>
 
         <div class="hud-right">
+          <div class="hud-tokens-badge" id="hud-tokens-badge" title="Suas Fichas de Fliperama (Ganhe +2 explorando novas máquinas)">
+            🪙 <span id="arcade-tokens-val">25</span> <small>FICHAS</small>
+          </div>
           <div class="teleport-dropdown-wrap">
             <select id="teleport-select" class="teleport-select" title="Teletransportar para máquina">
               <option value="">🚀 Teleporte Rápido...</option>
@@ -182,6 +185,15 @@
             </div>
             <span class="cmd-label">Sua TAG</span>
           </div>
+
+          <div class="cmd-sep"></div>
+
+          <div class="cmd-group">
+            <div class="cmd-keys">
+              <kbd class="kbd-neon">C</kbd>
+            </div>
+            <span class="cmd-label">Chat</span>
+          </div>
         </div>
       </nav>
 
@@ -238,9 +250,36 @@
         <span>JOGAR</span> 🕹️
       </button>
 
+      <!-- Cyberpunk Floating P2P Chat Dock -->
+      <div id="arcade-chat-dock" class="arcade-chat-dock">
+        <div class="chat-dock-header">
+          <span class="chat-header-title">💬 SALÃO P2P</span>
+          <span class="chat-header-tip">Pressione <kbd>C</kbd> para falar</span>
+        </div>
+        <div id="arcade-chat-messages" class="chat-messages-container">
+          <div class="chat-msg-row msg-system">
+            <span class="chat-msg-system">⚡ Conectado ao saguão P2P. Use C para enviar balões de fala!</span>
+          </div>
+        </div>
+        <form class="chat-input-bar" onsubmit="return false;">
+          <input type="text" id="arcade-chat-input" class="chat-input-field" placeholder="Digite uma mensagem (Enter)..." maxlength="120" autocomplete="off" />
+          <button id="arcade-chat-send" class="chat-send-btn" title="Enviar Mensagem">➤</button>
+        </form>
+      </div>
+
+      <!-- Mobile Floating Chat Toggle Button -->
+      <button id="mobile-chat-toggle" class="mobile-chat-toggle-btn" title="Abrir Chat P2P">
+        💬
+      </button>
+
       <!-- WebGL Diagnostics Banner (hidden unless error) -->
       <div id="webgl-error" class="webgl-error-banner" style="display: none;">
-        ⚠️ Não foi possível iniciar a aceleração WebGL. Verifique se a aceleração por hardware está habilitada nas configurações do seu navegador.
+        <div class="webgl-error-title">⚡ NOPEX ARCADE 3D MULTIPLAYER ⚡</div>
+        <p class="webgl-error-text">⚠️ Aceleração 3D WebGL indisponível ou desativada neste navegador.</p>
+        <p class="webgl-error-sub">Você pode curtir todos os 38 jogos sem perda de desempenho diretamente no catálogo Grid 2D:</p>
+        <a href="https://marcuscaiado.github.io/marcus-arcade/" class="webgl-fallback-btn">
+          📋 ABRIR CATÁLOGO GRID 2D (JOGAR DIRETO) ➔
+        </a>
       </div>
     </div>
 
