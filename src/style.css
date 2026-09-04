@@ -233,6 +233,75 @@ html, body {
   color: #ffffff;
 }
 
+.hud-btn-perf {
+  background: rgba(5, 255, 161, 0.12);
+  color: #05ffa1;
+  border: 1px solid rgba(5, 255, 161, 0.4);
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s;
+}
+
+.hud-btn-perf:hover {
+  background: #05ffa1;
+  color: #000;
+  box-shadow: 0 0 15px rgba(5, 255, 161, 0.6);
+  transform: translateY(-1px);
+}
+
+.hud-btn-perf.perf-high {
+  border-color: rgba(0, 245, 255, 0.5);
+  color: #00f5ff;
+  background: rgba(0, 245, 255, 0.15);
+}
+
+.hud-btn-perf.perf-balanced {
+  border-color: rgba(5, 255, 161, 0.5);
+  color: #05ffa1;
+  background: rgba(5, 255, 161, 0.15);
+}
+
+.hud-btn-perf.perf-ultra {
+  border-color: rgba(255, 211, 42, 0.5);
+  color: #ffd32a;
+  background: rgba(255, 211, 42, 0.15);
+}
+
+/* Floating Performance Notification Toast */
+.arcade-perf-toast {
+  position: fixed;
+  top: 75px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: rgba(13, 18, 43, 0.95);
+  border: 1px solid #05ffa1;
+  box-shadow: 0 0 25px rgba(5, 255, 161, 0.45);
+  color: #ffffff;
+  padding: 10px 22px;
+  border-radius: 999px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  z-index: 99999;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.arcade-perf-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 .hud-btn-2d {
   background: rgba(255, 0, 127, 0.15);
   color: #ff007f;

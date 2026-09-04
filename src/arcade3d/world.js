@@ -300,8 +300,43 @@ export function buildArcadeWorld(scene, gamesManifest) {
     cabinets,
     worldGroup,
     floorMesh,
-    update(time, player) {
-      cabinets.forEach(cab => cab.update(time, player));
+    update(time, player, perfMode = 'balanced') {
+      const pX = player ? player.x : 0;
+      const pZ = player ? player.z : 0;
+
+      // 1. Separate priority cabinets (hovered or occupied) from ambient cabinets
+      const ambientList = [];
+      for (let i = 0; i < cabinets.length; i++) {
+        const cab = cabinets[i];
+        if (cab.isHovered || cab.occupiedBy || cab.isLiveStreaming) {
+          cab.update(time, player, 'full');
+        } else {
+          const dx = cab.position.x - pX;
+          const dz = cab.position.z - pZ;
+          ambientList.push({ cab, distSq: dx * dx + dz * dz });
+        }
+      }
+
+      // 2. Sort ambient cabinets by distance to player
+      ambientList.sort((a, b) => a.distSq - b.distSq);
+
+      const maxFull = perfMode === 'ultra-perf' ? 1 : (perfMode === 'balanced' ? 3 : 5);
+      const maxReduced = perfMode === 'ultra-perf' ? 3 : (perfMode === 'balanced' ? 6 : 10);
+      const maxDistSq = perfMode === 'ultra-perf' ? 49.0 : 72.25; // 7m or 8.5m
+
+      for (let i = 0; i < ambientList.length; i++) {
+        const item = ambientList[i];
+        if (item.distSq > maxDistSq) {
+          item.cab.update(time, player, 'skip');
+        } else if (i < maxFull) {
+          item.cab.update(time, player, 'full');
+        } else if (i < maxReduced) {
+          item.cab.update(time, player, 'reduced');
+        } else {
+          item.cab.update(time, player, 'skip');
+        }
+      }
+
       rotundaRing.material.opacity = 0.8 + Math.sin(time * 4) * 0.2;
     }
   };

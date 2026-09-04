@@ -25,6 +25,7 @@ export class Arcade3DEngine {
     this.spectateTarget = null;
     this.watchHud = null;
 
+    this.initPerformance();
     this.initScene();
     this.initWorld();
     this.initPlayer();
@@ -55,15 +56,29 @@ export class Arcade3DEngine {
 
     this.camera = new THREE.PerspectiveCamera(52, width / height, 0.1, 200);
     this.camera.position.set(0, 4.2, 13.5);
+    this.updateCameraProjection(width, height);
 
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       powerPreference: 'high-performance'
     });
     this.renderer.setSize(width, height);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
+    this.renderer.setPixelRatio(this.calculateOptimalPixelRatio(width, height));
 
-    this.container.appendChild(this.renderer.domElement);
+    // WebGL Context Recovery & Stability Handlers for High-Res/Ultrawide Displays
+    const canvas = this.renderer.domElement;
+    canvas.addEventListener('webglcontextlost', (e) => {
+      e.preventDefault();
+      console.warn('[Arcade3D] WebGL context lost! Safely reducing resolution budget...');
+      this.perfMode = 'ultra-perf';
+      this.showPerformanceToast('⚡ Modo de Segurança: Resolução 3D ajustada para estabilidade.');
+    });
+    canvas.addEventListener('webglcontextrestored', () => {
+      console.log('[Arcade3D] WebGL context restored.');
+      this.onResize();
+    });
+
+    this.container.appendChild(canvas);
     this.clock = new THREE.Clock();
 
     // Tap-to-walk Raycaster and Destination Ring Pulse
@@ -790,12 +805,11 @@ export class Arcade3DEngine {
 
   onResize() {
     if (!this.container || !this.renderer || !this.camera) return;
-    const width = this.container.clientWidth || window.innerWidth;
-    const height = this.container.clientHeight || window.innerHeight;
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
+    const width = this.container.clientWidth || window.innerWidth || 1280;
+    const height = this.container.clientHeight || window.innerHeight || 720;
+    this.updateCameraProjection(width, height);
     this.renderer.setSize(width, height);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
+    this.renderer.setPixelRatio(this.calculateOptimalPixelRatio(width, height));
   }
 
   start() {
@@ -828,8 +842,35 @@ export class Arcade3DEngine {
 
     const time = this.clock.getElapsedTime();
 
-    // 1. Update World & Cabinets (with player position for distance culling)
-    this.world.update(time, this.player);
+    // 1. Update World & Cabinets with smart LOD scheduler and performance mode
+    this.world.update(time, this.player, this.perfMode);
+
+    // Running FPS monitor & Ultrawide auto-safeguard
+    this.fpsFrames = (this.fpsFrames || 0) + 1;
+    const now = performance.now();
+    if (!this.lastFpsCheck) this.lastFpsCheck = now;
+    if (now - this.lastFpsCheck >= 1000) {
+      const elapsed = now - this.lastFpsCheck;
+      this.currentFps = Math.round((this.fpsFrames * 1000) / elapsed);
+      this.fpsFrames = 0;
+      this.lastFpsCheck = now;
+      this.updatePerfHud();
+
+      // Auto-stepdown if hardware is struggling (< 28 FPS for 3 consecutive seconds)
+      if (this.currentFps < 28 && !this.manualPerfOverride) {
+        this.lowFpsStrikes = (this.lowFpsStrikes || 0) + 1;
+        if (this.lowFpsStrikes >= 3) {
+          this.lowFpsStrikes = 0;
+          if (this.perfMode === 'high') {
+            this.setPerformanceMode('balanced', true);
+          } else if (this.perfMode === 'balanced') {
+            this.setPerformanceMode('ultra-perf', true);
+          }
+        }
+      } else if (this.currentFps >= 45) {
+        this.lowFpsStrikes = 0;
+      }
+    }
 
     // Animate tap destination ring
     if (this.destinationPulse > 0) {
@@ -929,5 +970,144 @@ export class Arcade3DEngine {
     }
 
     this.renderer.render(this.scene, this.camera);
+  }
+
+  initPerformance() {
+    this.fpsFrames = 0;
+    this.lastFpsCheck = performance.now();
+    this.currentFps = 60;
+    this.lowFpsStrikes = 0;
+    this.manualPerfOverride = false;
+
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const aspect = width / height;
+
+    const saved = localStorage.getItem('arcade_perf_mode');
+    if (saved && ['high', 'balanced', 'ultra-perf'].includes(saved)) {
+      this.perfMode = saved;
+    } else if (aspect > 2.0 || width > 2400) {
+      // Auto-set balanced mode on ultrawide displays on initial visit
+      this.perfMode = 'balanced';
+    } else {
+      this.perfMode = 'high';
+    }
+
+    const perfBtn = document.getElementById('arcade-perf-btn');
+    if (perfBtn) {
+      perfBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.manualPerfOverride = true;
+        if (this.perfMode === 'high') {
+          this.setPerformanceMode('balanced');
+        } else if (this.perfMode === 'balanced') {
+          this.setPerformanceMode('ultra-perf');
+        } else {
+          this.setPerformanceMode('high');
+        }
+      });
+    }
+
+    this.updatePerfHud();
+  }
+
+  setPerformanceMode(mode, isAuto = false) {
+    this.perfMode = mode;
+    try {
+      localStorage.setItem('arcade_perf_mode', mode);
+    } catch (e) {}
+    this.onResize();
+    this.updatePerfHud();
+
+    const labelMap = {
+      'high': 'ALTA (Nativa)',
+      'balanced': 'BALANCEADA (Otimizada)',
+      'ultra-perf': 'ULTRA-DESEMPENHO (60 FPS)'
+    };
+
+    if (isAuto) {
+      this.showPerformanceToast(`⚡ Otimização Automática: Modo ${labelMap[mode]} ativado para garantir 60 FPS!`);
+    } else {
+      this.showPerformanceToast(`⚡ Qualidade Gráfica: Modo ${labelMap[mode]}`);
+    }
+  }
+
+  updatePerfHud() {
+    const labelEl = document.getElementById('arcade-perf-label');
+    const btn = document.getElementById('arcade-perf-btn');
+    if (!labelEl) return;
+
+    const shortLabels = {
+      'high': 'ALTA',
+      'balanced': 'BAL.',
+      'ultra-perf': 'ECO 60FPS'
+    };
+    labelEl.textContent = `${this.currentFps || 60} FPS [${shortLabels[this.perfMode] || 'BAL.'}]`;
+
+    if (btn) {
+      btn.classList.remove('perf-high', 'perf-balanced', 'perf-ultra');
+      if (this.perfMode === 'ultra-perf') btn.classList.add('perf-ultra');
+      else if (this.perfMode === 'balanced') btn.classList.add('perf-balanced');
+      else btn.classList.add('perf-high');
+    }
+  }
+
+  showPerformanceToast(msg) {
+    let toast = document.getElementById('arcade-perf-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'arcade-perf-toast';
+      toast.className = 'arcade-perf-toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(this._perfToastTimer);
+    this._perfToastTimer = setTimeout(() => {
+      toast.classList.remove('show');
+    }, 3200);
+  }
+
+  updateCameraProjection(width, height) {
+    const aspect = width / height;
+    this.camera.aspect = aspect;
+
+    // HORIZONTAL FOV LOCK FOR ULTRAWIDE & PANORAMIC DISPLAYS:
+    // Standard 16:9 monitor has ~82° horizontal FOV with 52° vertical FOV.
+    // When aspect > 1.85 (21:9 is ~2.39, 32:9 is ~3.56), fixed vertical FOV causes
+    // the horizontal FOV to blow out to 100°–122°, creating severe fish-eye edge distortion
+    // and bypassing Three.js frustum culling. Clamping horizontal FOV to 82° keeps perspective
+    // natural, crisp and culls peripheral cabinets cleanly!
+    if (aspect > 1.85) {
+      const targetHFovRad = 82 * (Math.PI / 180);
+      const vFovRad = 2 * Math.atan(Math.tan(targetHFovRad / 2) / aspect);
+      this.camera.fov = vFovRad * (180 / Math.PI);
+    } else {
+      this.camera.fov = 52;
+    }
+    this.camera.updateProjectionMatrix();
+  }
+
+  calculateOptimalPixelRatio(width, height) {
+    const rawDpr = window.devicePixelRatio || 1;
+    const aspect = width / height;
+
+    let pr = Math.min(rawDpr, 1.25);
+
+    // CAPPING FOR ULTRAWIDE / 4K DISPLAYS:
+    // Limit render buffer width so WebGL never tries to render 8M-12M pixels per frame!
+    if (width > 2200 || aspect > 2.0) {
+      const maxTargetWidth = (this.perfMode === 'ultra-perf') ? 1920 : (this.perfMode === 'balanced' ? 2400 : 2560);
+      const widthCapPr = maxTargetWidth / width;
+      pr = Math.min(pr, widthCapPr);
+    }
+
+    if (this.perfMode === 'ultra-perf') {
+      pr = Math.min(pr, 0.85);
+    } else if (this.perfMode === 'balanced') {
+      pr = Math.min(pr, 1.0);
+    }
+
+    return Math.max(0.65, Math.min(1.25, pr));
   }
 }

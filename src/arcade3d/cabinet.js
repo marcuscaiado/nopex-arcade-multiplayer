@@ -515,7 +515,7 @@ export function createArcadeCabinet(game, position, rotationY = 0) {
         this.occupancyBadge.setPlayer(null);
       }
     },
-    update(time, playerPos) {
+    update(time, playerPos, lodTier = 'full') {
       // Bob occupancy badge subtly when active
       if (this.occupiedBy && this.occupancyBadge.sprite.visible) {
         this.occupancyBadge.sprite.position.y = 3.65 + Math.sin(time * 3.5) * 0.06;
@@ -531,29 +531,36 @@ export function createArcadeCabinet(game, position, rotationY = 0) {
       // Restore standard theme floor glow color if not streaming
       floorGlow.material.color.setHex(theme.primary);
 
-      // Distance-based Level of Detail (LOD) & Occlusion Culling
-      // If player is farther than 8.5m and cabinet is neither hovered nor occupied, skip canvas redraw!
-      if (playerPos && !this.isHovered && !this.occupiedBy) {
-        const dx = this.position.x - playerPos.x;
-        const dz = this.position.z - playerPos.z;
-        const distSq = dx * dx + dz * dz;
-        if (distSq > 72.25) { // > 8.5 meters
-          floorGlow.material.opacity = 0.25;
-          return;
-        }
-      }
-
       if (this.isHovered || this.occupiedBy) {
         updateScreenTex(time);
         floorGlow.material.opacity = 0.7 + Math.sin(time * 6.0) * 0.25;
-      } else {
-        const frame = Math.floor(time * 24); // Smooth 24 FPS authentic pixel attract loop when nearby
+        return;
+      }
+
+      // Distance-based Level of Detail (LOD) & Canvas Texture Throttling
+      if (lodTier === 'skip') {
+        floorGlow.material.opacity = 0.25;
+        return;
+      }
+
+      if (lodTier === 'reduced') {
+        // Reduced 6 FPS attract loop for distant/peripheral cabinets
+        const frame = Math.floor(time * 6);
         if (this._lastFrame !== frame) {
           this._lastFrame = frame;
           updateScreenTex(time);
         }
         floorGlow.material.opacity = 0.35;
+        return;
       }
+
+      // Full 24 FPS authentic pixel attract loop for close cabinets
+      const frame = Math.floor(time * 24);
+      if (this._lastFrame !== frame) {
+        this._lastFrame = frame;
+        updateScreenTex(time);
+      }
+      floorGlow.material.opacity = 0.45;
     },
     dispose() {
       this.clearLiveStream();
