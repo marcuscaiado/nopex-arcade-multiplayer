@@ -539,5 +539,35 @@
       "8-Way Whip"
     ],
     "badgeClass": "btn-castlevania"
+  },
+  {
+    "id": "mslug",
+    "name": "Metal Slug (1996)",
+    "icon": "💥",
+    "category": "action",
+    "unit": "PTS",
+    "url": "games/mslug/index.html",
+    "description": "The immortal SNK Neo-Geo arcade run-and-gun! Blast General Morden's rebel forces with SV-001 tank, heavy machine gun, rocket launcher and rescue POWs.",
+    "tech": [
+      "WASM Neo-Geo",
+      "SNK Arcade",
+      "SV-001 Tank"
+    ],
+    "badgeClass": "btn-mslug"
+  },
+  {
+    "id": "mslugx",
+    "name": "Metal Slug X",
+    "icon": "💣",
+    "category": "action",
+    "unit": "PTS",
+    "url": "games/mslugx/index.html",
+    "description": "The super-upgraded Neo-Geo definitive edition! Laser guns, Iron Lizard, Super Grenades, alien invaders, mummies, and zero slowdowns at silky 60 FPS.",
+    "tech": [
+      "WASM Neo-Geo",
+      "SNK Arcade",
+      "Definitive Edition"
+    ],
+    "badgeClass": "btn-mslugx"
   }
 ]

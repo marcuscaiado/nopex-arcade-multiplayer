@@ -257,16 +257,18 @@ export function buildArcadeWorld(scene, gamesManifest) {
   addCabinet('cute-mini-golf',      { x: 6.5, z: -3.5 }, -Math.PI / 2);   // Faces West
 
   // ZONE 2: ACTION & FIGHTING ALLEY (West Wall, X = -19.5, Facing East)
-  addCabinet('street-fighter-2',    { x: -19.5, z: -23.0 }, Math.PI / 2);
-  addCabinet('mk2',                 { x: -19.5, z: -18.5 }, Math.PI / 2);
-  addCabinet('sor2',                { x: -19.5, z: -14.0 }, Math.PI / 2);
-  addCabinet('gta-2',               { x: -19.5, z: -9.5 },  Math.PI / 2);
-  addCabinet('neon-katana-slash',   { x: -19.5, z: -5.0 },  Math.PI / 2);
-  addCabinet('stickman-fps-arcade', { x: -19.5, z: -0.5 },  Math.PI / 2);
-  addCabinet('castlevania4',        { x: -19.5, z: 4.0 },   Math.PI / 2);
-  addCabinet('sky-ace-1944',        { x: -19.5, z: 8.5 },   Math.PI / 2);
-  addCabinet('asteroid-blitz',      { x: -19.5, z: 13.0 },  Math.PI / 2);
-  addCabinet('cyber-shuriken',      { x: -19.5, z: 17.5 },  Math.PI / 2);
+  addCabinet('street-fighter-2',    { x: -19.5, z: -24.5 }, Math.PI / 2);
+  addCabinet('mk2',                 { x: -19.5, z: -21.0 }, Math.PI / 2);
+  addCabinet('sor2',                { x: -19.5, z: -17.5 }, Math.PI / 2);
+  addCabinet('mslug',               { x: -19.5, z: -14.0 }, Math.PI / 2); // ⚡ Metal Slug 1996 (SNK Neo-Geo)
+  addCabinet('mslugx',              { x: -19.5, z: -10.5 }, Math.PI / 2); // ⚡ Metal Slug X (SNK Neo-Geo)
+  addCabinet('gta-2',               { x: -19.5, z: -7.0 },  Math.PI / 2);
+  addCabinet('neon-katana-slash',   { x: -19.5, z: -3.5 },  Math.PI / 2);
+  addCabinet('stickman-fps-arcade', { x: -19.5, z: 0.0 },   Math.PI / 2);
+  addCabinet('castlevania4',        { x: -19.5, z: 3.5 },   Math.PI / 2);
+  addCabinet('sky-ace-1944',        { x: -19.5, z: 7.0 },   Math.PI / 2);
+  addCabinet('asteroid-blitz',      { x: -19.5, z: 10.5 },  Math.PI / 2);
+  addCabinet('cyber-shuriken',      { x: -19.5, z: 14.0 },  Math.PI / 2);
 
   // ZONE 3: RETRO VAULT & 16-BIT LEGENDS (North Wall, Z = -26.5, Facing South)
   addCabinet('sonic1',              { x: -11.4, z: -26.5 }, 0);
