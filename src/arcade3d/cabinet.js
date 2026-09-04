@@ -365,6 +365,9 @@ export function createArcadeCabinet(game, position, rotationY = 0) {
     collisionBox,
     isHovered: false,
     _lastFrame: 0,
+    screenCanvas,
+    screenCtx,
+    screenTex,
     activeVideoElement: null,
     videoTexture: null,
     isLiveStreaming: false,
@@ -449,6 +452,9 @@ export function createArcadeCabinet(game, position, rotationY = 0) {
         try {
           this.activeVideoElement.pause();
           this.activeVideoElement.srcObject = null;
+          if (this.activeVideoElement.parentNode) {
+            this.activeVideoElement.parentNode.removeChild(this.activeVideoElement);
+          }
         } catch (e) {}
         this.activeVideoElement = null;
       }
@@ -461,6 +467,8 @@ export function createArcadeCabinet(game, position, rotationY = 0) {
       video.autoplay = true;
       video.muted = true; // Visual feed only as requested by user ("apenas feed visual por hora")
       video.playsInline = true;
+      video.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-999;';
+      document.body.appendChild(video);
       video.srcObject = mediaStream;
       video.play().catch(() => {});
 
@@ -483,6 +491,9 @@ export function createArcadeCabinet(game, position, rotationY = 0) {
         try {
           this.activeVideoElement.pause();
           this.activeVideoElement.srcObject = null;
+          if (this.activeVideoElement.parentNode) {
+            this.activeVideoElement.parentNode.removeChild(this.activeVideoElement);
+          }
         } catch (e) {}
         this.activeVideoElement = null;
       }
