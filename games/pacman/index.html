@@ -2,24 +2,34 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>🟡 PAC-MAN (1980 CLASSIC ARCADE) 👻 | Nopex Arcade</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: none;
+    }
+
     html, body {
       width: 100%;
       height: 100%;
+      height: 100dvh;
       background: #000;
       color: #fff;
       overflow: hidden;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
       font-family: 'Press Start 2P', monospace;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
 
     #arcade-cabinet-frame {
@@ -27,13 +37,30 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: space-between;
       background: #070914;
       border: 3px solid #ffd32a;
-      border-radius: 16px;
-      padding: 12px 16px 14px 16px;
-      box-shadow: 0 0 35px rgba(255, 211, 42, 0.35), inset 0 0 20px rgba(0, 0, 0, 0.8);
-      max-width: 98vw;
-      max-height: 98vh;
+      border-radius: 14px;
+      padding: 8px 10px 8px 10px;
+      box-shadow: 0 0 25px rgba(255, 211, 42, 0.28), inset 0 0 16px rgba(0, 0, 0, 0.85);
+      width: 100%;
+      height: 100%;
+      max-width: 520px;
+      max-height: 100dvh;
+      overflow: hidden;
+    }
+
+    .game-main-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      flex: 1;
+      min-height: 0;
+      min-width: 0;
+      overflow: hidden;
     }
 
     .arcade-top-bar {
@@ -41,34 +68,45 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
-      font-size: 11px;
+      flex-shrink: 0;
+      padding: 2px 4px 4px 4px;
+      font-size: clamp(8px, 2.2vw, 11px);
       color: #fff;
     }
 
     .score-group {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3px;
     }
 
     .score-title { color: #ff0055; }
-    .score-val { color: #ffffff; }
+    .score-val { color: #ffffff; letter-spacing: 1px; }
     .hi-score-title { color: #00f5ff; }
-    .hi-score-val { color: #ffd32a; }
+    .hi-score-val { color: #ffd32a; letter-spacing: 1px; }
 
     #canvas-wrap {
       position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       border: 2px solid #0022ff;
       border-radius: 8px;
       background: #000;
       box-shadow: 0 0 15px rgba(0, 34, 255, 0.5);
       cursor: pointer;
+      overflow: hidden;
+      max-width: 100%;
+      max-height: 100%;
+      flex-shrink: 0;
     }
 
     canvas {
       display: block;
       image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      width: 100%;
+      height: 100%;
     }
 
     .arcade-bottom-bar {
@@ -76,8 +114,9 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 10px;
-      font-size: 10px;
+      flex-shrink: 0;
+      padding: 6px 4px 4px 4px;
+      font-size: clamp(7px, 2vw, 10px);
       color: #94a3b8;
     }
 
@@ -88,8 +127,8 @@
     }
 
     .life-icon {
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
       background: #ffd32a;
       border-radius: 50%;
       clip-path: polygon(100% 0%, 50% 50%, 100% 100%, 0% 100%, 0% 0%);
@@ -100,33 +139,132 @@
       font-size: 16px;
     }
 
-    /* Floating Touch D-Pad for Mobile */
-    .touch-controls {
-      display: none;
-      margin-top: 10px;
-      gap: 6px;
+    /* Dedicated Touch Controls Container */
+    .touch-controls-area {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      flex-shrink: 0;
+      height: 115px;
+      padding: 4px 0;
     }
 
-    @media (max-width: 768px), (pointer: coarse) {
-      .touch-controls { display: grid; grid-template-columns: repeat(3, 48px); grid-template-rows: repeat(2, 44px); gap: 6px; justify-content: center; }
-      .t-btn { background: #1a1e36; border: 1px solid #ffd32a; color: #ffd32a; border-radius: 8px; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-      .t-btn:active { background: #ffd32a; color: #000; }
-      .t-up { grid-column: 2; grid-row: 1; }
-      .t-left { grid-column: 1; grid-row: 2; }
-      .t-down { grid-column: 2; grid-row: 2; }
-      .t-right { grid-column: 3; grid-row: 2; }
+    .joystick-zone {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: none;
+    }
+
+    .joystick-base {
+      position: relative;
+      width: 104px;
+      height: 104px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #151a36 0%, #080a18 70%, #03040a 100%);
+      border: 2px solid rgba(255, 211, 42, 0.45);
+      box-shadow: 0 0 16px rgba(255, 211, 42, 0.25), inset 0 0 14px rgba(0, 0, 0, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: grab;
+    }
+
+    .joystick-base:active {
+      cursor: grabbing;
+    }
+
+    .j-dir {
+      position: absolute;
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.22);
+      transition: color 0.12s, text-shadow 0.12s, transform 0.12s;
+      pointer-events: none;
+    }
+
+    .j-up {
+      top: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .j-down {
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .j-left {
+      left: 7px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    .j-right {
+      right: 7px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .j-up.active {
+      color: #ffd32a;
+      text-shadow: 0 0 10px #ffd32a, 0 0 18px rgba(255, 211, 42, 0.8);
+      transform: translateX(-50%) scale(1.35);
+    }
+    .j-down.active {
+      color: #ffd32a;
+      text-shadow: 0 0 10px #ffd32a, 0 0 18px rgba(255, 211, 42, 0.8);
+      transform: translateX(-50%) scale(1.35);
+    }
+    .j-left.active {
+      color: #ffd32a;
+      text-shadow: 0 0 10px #ffd32a, 0 0 18px rgba(255, 211, 42, 0.8);
+      transform: translateY(-50%) scale(1.35);
+    }
+    .j-right.active {
+      color: #ffd32a;
+      text-shadow: 0 0 10px #ffd32a, 0 0 18px rgba(255, 211, 42, 0.8);
+      transform: translateY(-50%) scale(1.35);
+    }
+
+    .joystick-thumb {
+      position: absolute;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #ffffff 0%, #ffd32a 50%, #d35400 100%);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7), 0 0 12px rgba(255, 211, 42, 0.6);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      will-change: transform;
+    }
+
+    .thumb-center-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(0, 0, 0, 0.35);
+      background: rgba(255, 255, 255, 0.3);
     }
 
     /* Start / Level Win / Game Over Overlay */
     #start-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(0, 0, 0, 0.82);
+      background: rgba(0, 0, 0, 0.86);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 14px;
+      gap: 12px;
+      padding: 14px;
       border-radius: 8px;
       z-index: 10;
       cursor: pointer;
@@ -134,7 +272,7 @@
 
     .start-title {
       color: #ffd32a;
-      font-size: 18px;
+      font-size: clamp(14px, 4vw, 18px);
       text-shadow: 0 0 12px #ffd32a;
       text-align: center;
       line-height: 1.4;
@@ -142,17 +280,18 @@
 
     .start-prompt {
       color: #fff;
-      font-size: 10px;
+      font-size: clamp(8px, 2.2vw, 10px);
       animation: blink 0.8s infinite alternate;
+      text-align: center;
     }
 
     .start-btn {
       font-family: 'Press Start 2P', monospace;
-      font-size: 11px;
+      font-size: clamp(9px, 2.4vw, 11px);
       background: #ffd32a;
       color: #000;
       border: none;
-      padding: 10px 18px;
+      padding: 10px 16px;
       border-radius: 6px;
       cursor: pointer;
       box-shadow: 0 0 15px rgba(255, 211, 42, 0.8);
@@ -165,53 +304,126 @@
     }
 
     @keyframes blink { 0% { opacity: 0.3; } 100% { opacity: 1; } }
+
+    /* LANDSCAPE MOBILE VIEWPORT (Wide, low height) */
+    @media (orientation: landscape) and (max-height: 560px) {
+      #arcade-cabinet-frame {
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        max-width: 100vw;
+        height: 100dvh;
+        padding: 4px 12px;
+        gap: 16px;
+        border-width: 2px;
+      }
+
+      .game-main-column {
+        order: 2;
+        height: 100%;
+        max-width: calc((100dvh - 50px) * 0.9032 + 30px);
+        flex: 1;
+      }
+
+      .touch-controls-area {
+        order: 1;
+        width: 120px;
+        height: 100%;
+        padding: 0;
+      }
+
+      .arcade-top-bar {
+        padding: 2px 2px 4px 2px;
+        font-size: 8px;
+      }
+
+      .arcade-bottom-bar {
+        padding: 4px 2px 2px 2px;
+        font-size: 7px;
+      }
+
+      .joystick-base {
+        width: 96px;
+        height: 96px;
+      }
+
+      .joystick-thumb {
+        width: 40px;
+        height: 40px;
+      }
+    }
+
+    /* Small Screen Padding Reductions */
+    @media (max-width: 440px) {
+      #arcade-cabinet-frame {
+        padding: 4px 6px 6px 6px;
+        border-width: 2px;
+        border-radius: 10px;
+      }
+      .touch-controls-area {
+        height: 110px;
+      }
+      .joystick-base {
+        width: 98px;
+        height: 98px;
+      }
+    }
   </style>
 </head>
 <body>
 
   <div id="arcade-cabinet-frame">
-    <div class="arcade-top-bar">
-      <div class="score-group">
-        <span class="score-title">1UP</span>
-        <span id="score-display" class="score-val">00</span>
-      </div>
-      <div class="score-group" style="text-align: center;">
-        <span class="round-title" style="color: #ffd32a; font-size: 9px;">FASE</span>
-        <span id="level-display" class="round-val" style="color: #00f5ff; font-size: 13px; font-weight: bold;">1</span>
-      </div>
-      <div class="score-group" style="text-align: right;">
-        <span class="hi-score-title">HIGH SCORE</span>
-        <span id="high-score-display" class="hi-score-val">10000</span>
-      </div>
-    </div>
-
-    <div id="canvas-wrap">
-      <canvas id="pacman-canvas" width="448" height="496"></canvas>
-      <div id="start-overlay">
-        <div class="start-title" id="overlay-title">PAC-MAN 1980</div>
-        <div id="overlay-desc" style="font-size: 9px; color: #00f5ff; text-align: center; line-height: 1.6;">
-          DIFICULDADE PROGRESSIVA<br>
-          FASE 1: RITMO SUAVE • COLETE OS PONTOS
+    <div class="game-main-column">
+      <div class="arcade-top-bar">
+        <div class="score-group">
+          <span class="score-title">1UP</span>
+          <span id="score-display" class="score-val">00</span>
         </div>
-        <button id="start-btn" class="start-btn">JOGAR [ENTER / TOQUE]</button>
-        <div class="start-prompt" id="overlay-prompt">PRESSIONE QUALQUER TECLA</div>
+        <div class="score-group" style="text-align: center;">
+          <span class="round-title" style="color: #ffd32a; font-size: 9px;">FASE</span>
+          <span id="level-display" class="round-val" style="color: #00f5ff; font-size: 13px; font-weight: bold;">1</span>
+        </div>
+        <div class="score-group" style="text-align: right;">
+          <span class="hi-score-title">HIGH SCORE</span>
+          <span id="high-score-display" class="hi-score-val">10000</span>
+        </div>
+      </div>
+
+      <div id="canvas-wrap">
+        <canvas id="pacman-canvas" width="448" height="496"></canvas>
+        <div id="start-overlay">
+          <div class="start-title" id="overlay-title">PAC-MAN 1980</div>
+          <div id="overlay-desc" style="font-size: 9px; color: #00f5ff; text-align: center; line-height: 1.6;">
+            DIFICULDADE PROGRESSIVA<br>
+            FASE 1: RITMO SUAVE • COLETE OS PONTOS
+          </div>
+          <button id="start-btn" class="start-btn">JOGAR [ENTER / TOQUE]</button>
+          <div class="start-prompt" id="overlay-prompt">PRESSIONE QUALQUER TECLA</div>
+        </div>
+      </div>
+
+      <div class="arcade-bottom-bar">
+        <div class="lives-wrap" id="lives-container">
+          <span class="life-icon"></span>
+          <span class="life-icon"></span>
+        </div>
+        <div id="level-status-tip" style="color: #00f5ff; font-size: 9px; letter-spacing: 1px;">FASE 1 • MAIS SUAVE 🍒</div>
+        <div class="fruit-icon" id="fruit-display">🍒</div>
       </div>
     </div>
 
-    <div class="arcade-bottom-bar">
-      <div class="lives-wrap" id="lives-container">
-        <span class="life-icon"></span>
-        <span class="life-icon"></span>
+    <div id="touch-controls-area" class="touch-controls-area">
+      <div id="joystick-zone" class="joystick-zone">
+        <div id="joystick-base" class="joystick-base">
+          <span class="j-dir j-up" id="j-up">▲</span>
+          <span class="j-dir j-right" id="j-right">▶</span>
+          <span class="j-dir j-down" id="j-down">▼</span>
+          <span class="j-dir j-left" id="j-left">◀</span>
+          <div id="joystick-thumb" class="joystick-thumb">
+            <div class="thumb-center-dot"></div>
+          </div>
+        </div>
       </div>
-      <div id="level-status-tip" style="color: #00f5ff; font-size: 9px; letter-spacing: 1px;">FASE 1 • MAIS SUAVE 🍒</div>
-      <div class="fruit-icon" id="fruit-display">🍒</div>
-    </div>
-
-    <div class="touch-controls">
-      <button class="t-btn t-up" id="btn-up">▲</button>
-      <button class="t-btn t-left" id="btn-left">◀</button>
-      <button class="t-btn t-down" id="btn-down">▼</button>
-      <button class="t-btn t-right" id="btn-right">▶</button>
     </div>
   </div>
 
@@ -526,14 +738,14 @@
             this.dirY = this.nextDirY;
           }
 
-          // 2. Cornering buffer (within 4 pixels of tile center, snap and turn)
+          // 2. Cornering buffer (within 6 pixels of tile center, snap and turn)
           if ((this.nextDirX !== this.dirX || this.nextDirY !== this.dirY) && (this.nextDirX !== 0 || this.nextDirY !== 0)) {
             const targetCol = Math.round(this.x / TILE);
             const targetRow = Math.round(this.y / TILE);
             const diffX = this.x - targetCol * TILE;
             const diffY = this.y - targetRow * TILE;
 
-            if (Math.abs(diffX) <= 4 && Math.abs(diffY) <= 4) {
+            if (Math.abs(diffX) <= 6 && Math.abs(diffY) <= 6) {
               if (isWalkable(targetCol + this.nextDirX, targetRow + this.nextDirY, false)) {
                 this.x = targetCol * TILE;
                 this.y = targetRow * TILE;
@@ -1196,50 +1408,170 @@
       if (gameState !== 'PLAYING' && gameState !== 'LEVEL_WIN' && gameState !== 'DYING') startGame();
     });
 
-    // Touch Buttons
-    const bindTouch = (id, dx, dy) => {
-      const b = document.getElementById(id);
-      if (!b) return;
-      const act = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        handleInput(dx, dy);
-      };
-      b.addEventListener('pointerdown', act);
-    };
-    bindTouch('btn-up', 0, -1);
-    bindTouch('btn-down', 0, 1);
-    bindTouch('btn-left', -1, 0);
-    bindTouch('btn-right', 1, 0);
+    // --- RESPONSIVE CANVAS ASPECT-RATIO FITTER ---
+    function fitCanvas() {
+      const wrap = document.getElementById('canvas-wrap');
+      const mainCol = document.querySelector('.game-main-column');
+      const topBar = document.querySelector('.arcade-top-bar');
+      const btmBar = document.querySelector('.arcade-bottom-bar');
+      if (!wrap || !canvas || !mainCol) return;
 
-    // Canvas Touch Gestures (Swiping)
-    let touchStartX = 0;
-    let touchStartY = 0;
-    canvas.addEventListener('touchstart', (e) => {
-      if (e.touches.length > 0) {
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-      }
-    }, { passive: true });
+      const topH = topBar ? topBar.offsetHeight : 28;
+      const btmH = btmBar ? btmBar.offsetHeight : 24;
+      const availW = mainCol.clientWidth - 8;
+      const availH = mainCol.clientHeight - (topH + btmH + 16);
+      if (availW <= 0 || availH <= 0) return;
 
-    canvas.addEventListener('touchend', (e) => {
-      if (e.changedTouches.length > 0) {
-        const dx = e.changedTouches[0].clientX - touchStartX;
-        const dy = e.changedTouches[0].clientY - touchStartY;
-        if (Math.abs(dx) > Math.abs(dy)) {
-          if (dx > 20) handleInput(1, 0);
-          else if (dx < -20) handleInput(-1, 0);
+      // 448 x 496 native aspect ratio
+      const scale = Math.min(availW / 448, availH / 496);
+      const targetW = Math.floor(448 * scale);
+      const targetH = Math.floor(496 * scale);
+
+      wrap.style.width = targetW + 'px';
+      wrap.style.height = targetH + 'px';
+      canvas.style.width = targetW + 'px';
+      canvas.style.height = targetH + 'px';
+    }
+
+    window.addEventListener('resize', fitCanvas);
+    window.addEventListener('orientationchange', () => setTimeout(fitCanvas, 100));
+
+    // --- VIRTUAL ARCADE JOYSTICK CONTROLLER ---
+    const joystickBase = document.getElementById('joystick-base');
+    const joystickThumb = document.getElementById('joystick-thumb');
+    const jUp = document.getElementById('j-up');
+    const jDown = document.getElementById('j-down');
+    const jLeft = document.getElementById('j-left');
+    const jRight = document.getElementById('j-right');
+
+    let joystickActive = false;
+    let joystickPointerId = null;
+    let baseRect = null;
+    let activeDir = null;
+
+    const MAX_RADIUS = 30; // Max displacement of thumb in px
+    const DEAD_ZONE = 8;   // Min displacement to register direction
+
+    function setDirHighlight(dir) {
+      if (activeDir === dir) return;
+      activeDir = dir;
+      [jUp, jDown, jLeft, jRight].forEach(el => el && el.classList.remove('active'));
+      if (dir === 'UP' && jUp) jUp.classList.add('active');
+      if (dir === 'DOWN' && jDown) jDown.classList.add('active');
+      if (dir === 'LEFT' && jLeft) jLeft.classList.add('active');
+      if (dir === 'RIGHT' && jRight) jRight.classList.add('active');
+    }
+
+    function updateJoystick(clientX, clientY) {
+      if (!baseRect) baseRect = joystickBase.getBoundingClientRect();
+      const cx = baseRect.left + baseRect.width / 2;
+      const cy = baseRect.top + baseRect.height / 2;
+      const dx = clientX - cx;
+      const dy = clientY - cy;
+      const dist = Math.hypot(dx, dy);
+      const angle = Math.atan2(dy, dx);
+
+      const clampDist = Math.min(dist, MAX_RADIUS);
+      const tx = Math.cos(angle) * clampDist;
+      const ty = Math.sin(angle) * clampDist;
+
+      joystickThumb.style.transition = 'none';
+      joystickThumb.style.transform = `translate(calc(-50% + ${tx.toFixed(1)}px), calc(-50% + ${ty.toFixed(1)}px))`;
+
+      if (dist >= DEAD_ZONE) {
+        const deg = (angle * 180 / Math.PI + 360) % 360;
+        if (deg >= 45 && deg < 135) {
+          handleInput(0, 1);
+          setDirHighlight('DOWN');
+        } else if (deg >= 135 && deg < 225) {
+          handleInput(-1, 0);
+          setDirHighlight('LEFT');
+        } else if (deg >= 225 && deg < 315) {
+          handleInput(0, -1);
+          setDirHighlight('UP');
         } else {
-          if (dy > 20) handleInput(0, 1);
-          else if (dy < -20) handleInput(0, -1);
+          handleInput(1, 0);
+          setDirHighlight('RIGHT');
         }
+      } else {
+        setDirHighlight(null);
       }
-    }, { passive: true });
+    }
+
+    function onJoystickStart(e) {
+      e.preventDefault();
+      snd.init();
+      if (gameState !== 'PLAYING' && gameState !== 'LEVEL_WIN' && gameState !== 'DYING') {
+        startGame();
+      }
+      joystickActive = true;
+      joystickPointerId = e.pointerId;
+      joystickBase.setPointerCapture(e.pointerId);
+      baseRect = joystickBase.getBoundingClientRect();
+      updateJoystick(e.clientX, e.clientY);
+    }
+
+    function onJoystickMove(e) {
+      if (!joystickActive || e.pointerId !== joystickPointerId) return;
+      e.preventDefault();
+      updateJoystick(e.clientX, e.clientY);
+    }
+
+    function onJoystickEnd(e) {
+      if (e.pointerId !== joystickPointerId) return;
+      joystickActive = false;
+      joystickPointerId = null;
+      setDirHighlight(null);
+      joystickThumb.style.transition = 'transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+      joystickThumb.style.transform = 'translate(-50%, -50%)';
+    }
+
+    if (joystickBase) {
+      joystickBase.addEventListener('pointerdown', onJoystickStart);
+      joystickBase.addEventListener('pointermove', onJoystickMove);
+      joystickBase.addEventListener('pointerup', onJoystickEnd);
+      joystickBase.addEventListener('pointercancel', onJoystickEnd);
+    }
+
+    // Canvas Direct Touch Gestures (Drag / Swipe on Maze)
+    let canvasTouchActive = false;
+    let canvasTouchStartX = 0;
+    let canvasTouchStartY = 0;
+
+    canvas.addEventListener('pointerdown', (e) => {
+      canvasTouchActive = true;
+      canvasTouchStartX = e.clientX;
+      canvasTouchStartY = e.clientY;
+      if (gameState !== 'PLAYING' && gameState !== 'LEVEL_WIN' && gameState !== 'DYING') {
+        startGame();
+      }
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (!canvasTouchActive) return;
+      const dx = e.clientX - canvasTouchStartX;
+      const dy = e.clientY - canvasTouchStartY;
+      const dist = Math.hypot(dx, dy);
+      if (dist > 18) {
+        if (Math.abs(dx) > Math.abs(dy)) {
+          handleInput(dx > 0 ? 1 : -1, 0);
+        } else {
+          handleInput(0, dy > 0 ? 1 : -1);
+        }
+        canvasTouchStartX = e.clientX;
+        canvasTouchStartY = e.clientY;
+      }
+    });
+
+    const stopCanvasTouch = () => { canvasTouchActive = false; };
+    canvas.addEventListener('pointerup', stopCanvasTouch);
+    canvas.addEventListener('pointercancel', stopCanvasTouch);
 
     // Initial boot
     initLevel(1);
     updateScores();
     updateLivesDisplay();
+    fitCanvas();
     requestAnimationFrame(render);
   </script>
 </body>
