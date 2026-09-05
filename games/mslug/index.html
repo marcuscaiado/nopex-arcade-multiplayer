@@ -993,35 +993,8 @@
       "vsync": "enabled"
     };
 
-    // Pre-mapped Player 1 & Player 2 default controls for Neo-Geo Arcade
-    window.EJS_defaultControls = {
-      0: { // Player 1 (Marco Rossi)
-        0: { value: 'x' },         // B (Jump)
-        1: { value: 'z' },         // Y (Shoot)
-        2: { value: 'Shift' },     // Select / Coin P1
-        3: { value: 'Enter' },     // Start P1
-        4: { value: 'ArrowUp' },    // Up
-        5: { value: 'ArrowDown' },  // Down
-        6: { value: 'ArrowLeft' },  // Left
-        7: { value: 'ArrowRight' }, // Right
-        8: { value: ' ' },         // A (Grenade)
-        9: { value: 'a' }
-      },
-      1: { // Player 2 (Tarma Roving - Online injected)
-        0: { value: 'o' },         // B (Jump P2)
-        1: { value: 'u' },         // Y (Shoot P2)
-        2: { value: '6' },         // Select / Coin P2
-        3: { value: '2' },         // Start P2
-        4: { value: 'i' },         // Up P2
-        5: { value: 'k' },         // Down P2
-        6: { value: 'j' },         // Left P2
-        7: { value: 'l' },         // Right P2
-        8: { value: 'p' },         // A (Grenade P2)
-        9: { value: '[' }
-      }
-    };
 
-    // RetroArch audio & frame synchronization tuning
+    // RetroArch audio & frame synchronization tuning + Player 2 Netplay bindings
     window.EJS_ready = () => {
       const gm = window.EJS_emulator?.gameManager;
       if (gm && gm.FS) {
@@ -1035,21 +1008,31 @@
           cfg += 'video_vsync = true\n';
           cfg += 'video_frame_delay = 0\n';
           cfg += 'video_smooth = false\n';
+
+          // Player 2 bindings in RetroArch
+          cfg += 'input_player2_b = "o"\n';
+          cfg += 'input_player2_y = "u"\n';
+          cfg += 'input_player2_select = "6"\n';
+          cfg += 'input_player2_start = "2"\n';
+          cfg += 'input_player2_up = "i"\n';
+          cfg += 'input_player2_down = "k"\n';
+          cfg += 'input_player2_left = "j"\n';
+          cfg += 'input_player2_right = "l"\n';
+          cfg += 'input_player2_a = "p"\n';
+
           gm.FS.writeFile(path, cfg);
         } catch (e) {}
       }
     };
 
     window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
-    window.EJS_gameUrl = 'roms/mslug.zip';
-
-    // Only boot the 30MB emulator on Host or solo play.
-    // Guest gets low-latency 60FPS stream immediately!
     if (isHost) {
-      const s = document.createElement('script');
-      s.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
-      document.body.appendChild(s);
+      window.EJS_gameUrl = 'roms/mslug.zip';
+    } else {
+      window.EJS_startOnLoaded = false;
+      window.EJS_gameUrl = '';
     }
   </script>
+  <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
 </body>
 </html>
