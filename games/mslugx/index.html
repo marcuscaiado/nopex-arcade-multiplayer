@@ -583,6 +583,13 @@
   <!-- Guest Streaming Viewport (Player 2) -->
   <div id="guest-view">
     <video id="guest-video" autoplay playsinline muted></video>
+    <div id="guest-loader" style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,0.92); z-index:60;">
+      <div style="font-size:36px; animation:coinSpin 1.2s infinite ease-in-out;">🪙</div>
+      <div style="font-family:'Press Start 2P', monospace; font-size:12px; color:#00f5ff; margin-top:14px; text-align:center; padding:0 20px; line-height:1.6;" id="guest-loader-text">
+        CONECTADO AO HOST!<br>
+        <span style="font-size:10px; color:#ffd32a;">Sincronizando tela 60 FPS...</span>
+      </div>
+    </div>
     <div class="role-badge" id="guest-role-badge">🟢 Conectado ao Host • Tarma Roving (P2)</div>
     
     <!-- Guest Touch Controls for Mobile -->
@@ -618,13 +625,16 @@
 
       <!-- Host Panel -->
       <div class="tab-panel active" id="panel-host">
-        <div class="code-card">
-          <span class="code-label">CÓDIGO DA SUA SALA</span>
+        <div class="code-card" id="host-code-card" style="cursor:pointer;" title="Clique para copiar o código">
+          <span class="code-label">CÓDIGO DA SUA SALA (CLIQUE P/ COPIAR)</span>
           <span class="code-value" id="host-code-text">----</span>
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:10px;">
+          <button id="btn-copy-code" class="action-btn" style="flex:1;">📋 Copiar Código</button>
+          <button id="btn-copy-invite" class="action-btn" style="flex:1;">🔗 Copiar Link</button>
         </div>
         <div class="invite-box">
           <input type="text" id="invite-link-input" class="invite-input" readonly placeholder="Gerando link de convite..." />
-          <button id="btn-copy-invite" class="action-btn">📋 Copiar Link</button>
         </div>
         <p id="host-status" class="status-msg">🟡 Aguardando Player 2 (Tarma Roving) conectar...</p>
       </div>
@@ -632,10 +642,10 @@
       <!-- Join Panel -->
       <div class="tab-panel" id="panel-join">
         <div style="display:flex; gap:8px; margin-bottom:14px;">
-          <input type="text" id="join-room-input" class="invite-input" placeholder="Digite o código (ex: MS96)" maxlength="8" style="text-transform:uppercase; font-weight:bold; font-size:14px; text-align:center;" />
+          <input type="text" id="join-room-input" class="invite-input" placeholder="Cole o código ou link (ex: MS96)" style="text-transform:uppercase; font-weight:bold; font-size:14px; text-align:center;" />
           <button id="btn-join-room" class="action-btn">🚀 Conectar</button>
         </div>
-        <p id="join-status" class="status-msg">Digite o código de 4 letras fornecido pelo Host.</p>
+        <p id="join-status" class="status-msg">Digite o código de 4 letras ou cole o link do Host.</p>
       </div>
 
       <button id="online-modal-close" class="modal-close-btn" style="background:#00f5ff; margin-top:14px;">VOLTAR AO JOGO</button>
@@ -700,7 +710,7 @@
     const onlineModal = document.getElementById('online-modal');
     document.getElementById('btn-online-2p').addEventListener('click', () => {
       onlineModal.style.display = 'flex';
-      if (!myRoomCode && isHost) initHostRoom();
+      if (!peer && isHost) initHostRoom();
     });
     document.getElementById('online-modal-close').addEventListener('click', () => onlineModal.style.display = 'none');
     onlineModal.addEventListener('click', (e) => { if (e.target === onlineModal) onlineModal.style.display = 'none'; });
@@ -738,12 +748,14 @@
     // =============================================
     //  NETPLAY 2-PLAYER P2P REMOTE CONTROLLER ENGINE
     // =============================================
+    const PEER_PREFIX = 'nopex-mslugx-';
     let peer = null;
     let dataConnection = null;
     let mediaCall = null;
     let myRoomCode = '';
     let isHost = true;
     let isConnected = false;
+    let connectTimeoutTimer = null;
 
     const urlParams = new URLSearchParams(window.location.search);
     const joinCodeParam = urlParams.get('room');
@@ -763,6 +775,16 @@
       return base + '?room=' + (code || myRoomCode);
     }
 
+    function extractRoomCode(input) {
+      if (!input) return '';
+      const str = input.trim();
+      const urlMatch = str.match(/[?&]room=([A-Za-z0-9]+)/i);
+      if (urlMatch) return urlMatch[1].toUpperCase();
+      const peerMatch = str.match(/nopex-mslug[x]?-([A-Za-z0-9]+)/i);
+      if (peerMatch) return peerMatch[1].toUpperCase();
+      return str.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6);
+    }
+
     async function copyTextToClipboard(text) {
       if (navigator.clipboard && window.isSecureContext) {
         try {
@@ -774,14 +796,45 @@
         const textarea = document.createElement('textarea');
         textarea.value = text;
         textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
+        textarea.style.top = '0';
+        textarea.style.left = '0';
+        textarea.style.width = '2em';
+        textarea.style.height = '2em';
+        textarea.style.padding = '0';
+        textarea.style.border = 'none';
+        textarea.style.outline = 'none';
+        textarea.style.boxShadow = 'none';
+        textarea.style.background = 'transparent';
+        textarea.setAttribute('readonly', '');
         document.body.appendChild(textarea);
+        textarea.focus();
         textarea.select();
+        textarea.setSelectionRange(0, textarea.value.length);
         const success = document.execCommand('copy');
         document.body.removeChild(textarea);
-        return success;
+        if (success) return true;
       } catch (_) {}
       return false;
+    }
+
+    function cleanupP2P() {
+      if (connectTimeoutTimer) {
+        clearTimeout(connectTimeoutTimer);
+        connectTimeoutTimer = null;
+      }
+      if (mediaCall) {
+        try { mediaCall.close(); } catch (_) {}
+        mediaCall = null;
+      }
+      if (dataConnection) {
+        try { dataConnection.close(); } catch (_) {}
+        dataConnection = null;
+      }
+      if (peer) {
+        try { peer.destroy(); } catch (_) {}
+        peer = null;
+      }
+      isConnected = false;
     }
 
     // Tab switching in online modal
@@ -795,7 +848,9 @@
       tabJoin.classList.remove('active');
       panelHost.classList.add('active');
       panelJoin.classList.remove('active');
-      if (!myRoomCode && isHost) initHostRoom();
+      if (!peer || !isHost) {
+        initHostRoom();
+      }
     });
 
     tabJoin.addEventListener('click', () => {
@@ -803,9 +858,29 @@
       tabHost.classList.remove('active');
       panelJoin.classList.add('active');
       panelHost.classList.remove('active');
+      if (isHost && peer) {
+        cleanupP2P();
+      }
     });
 
-    // Copy Invite Link
+    // Copy Code & Copy Link Buttons
+    const btnCopyCode = document.getElementById('btn-copy-code');
+    const hostCodeCard = document.getElementById('host-code-card');
+    async function handleCopyCode() {
+      if (!myRoomCode) return;
+      await copyTextToClipboard(myRoomCode);
+      if (btnCopyCode) {
+        btnCopyCode.textContent = '✅ Código Copiado!';
+        btnCopyCode.style.background = '#06d6a0';
+        setTimeout(() => {
+          btnCopyCode.textContent = '📋 Copiar Código';
+          btnCopyCode.style.background = '';
+        }, 2000);
+      }
+    }
+    if (btnCopyCode) btnCopyCode.addEventListener('click', handleCopyCode);
+    if (hostCodeCard) hostCodeCard.addEventListener('click', handleCopyCode);
+
     const btnCopyInvite = document.getElementById('btn-copy-invite');
     const inviteLinkInput = document.getElementById('invite-link-input');
     async function handleCopyInvite() {
@@ -815,18 +890,35 @@
         inviteLinkInput.select();
       }
       await copyTextToClipboard(url);
-      btnCopyInvite.textContent = '✅ Copiado!';
-      btnCopyInvite.style.background = '#06d6a0';
-      setTimeout(() => {
-        btnCopyInvite.textContent = '📋 Copiar Link';
-        btnCopyInvite.style.background = '';
-      }, 2000);
+      if (btnCopyInvite) {
+        btnCopyInvite.textContent = '✅ Link Copiado!';
+        btnCopyInvite.style.background = '#06d6a0';
+        setTimeout(() => {
+          btnCopyInvite.textContent = '🔗 Copiar Link';
+          btnCopyInvite.style.background = '';
+        }, 2000);
+      }
     }
-    btnCopyInvite.addEventListener('click', handleCopyInvite);
-    inviteLinkInput.addEventListener('click', handleCopyInvite);
+    if (btnCopyInvite) btnCopyInvite.addEventListener('click', handleCopyInvite);
+    if (inviteLinkInput) inviteLinkInput.addEventListener('click', handleCopyInvite);
+
+    // Join input code extractor & auto-paste cleanup
+    const joinInput = document.getElementById('join-room-input');
+    if (joinInput) {
+      joinInput.addEventListener('input', (e) => {
+        const parsed = extractRoomCode(e.target.value);
+        if (parsed && parsed !== e.target.value) {
+          e.target.value = parsed;
+        }
+      });
+      joinInput.addEventListener('paste', (e) => {
+        setTimeout(() => {
+          joinInput.value = extractRoomCode(joinInput.value);
+        }, 10);
+      });
+    }
 
     // Synthetic Player 2 Key Injection (Host Side)
-    // Maps Player 2 keys directly into the Neo Geo emulator core
     const p2KeyMap = {
       UP:      { key: 'i', code: 'KeyI', keyCode: 73 },
       DOWN:    { key: 'k', code: 'KeyK', keyCode: 75 },
@@ -853,18 +945,25 @@
       });
       window.dispatchEvent(evt);
       document.dispatchEvent(evt);
-      const canvas = document.querySelector('#game canvas');
+      const canvas = document.querySelector('#game canvas') || document.querySelector('canvas');
       if (canvas) canvas.dispatchEvent(evt);
     }
 
     // Host Room Initialization
     function initHostRoom() {
-      if (peer) return;
-      myRoomCode = generateRoomCode();
+      cleanupP2P();
+      isHost = true;
+      if (!myRoomCode) {
+        myRoomCode = generateRoomCode();
+      }
       document.getElementById('host-code-text').textContent = myRoomCode;
-      inviteLinkInput.value = getInviteUrl(myRoomCode);
+      if (inviteLinkInput) inviteLinkInput.value = getInviteUrl(myRoomCode);
 
-      const peerId = 'nopex-mslugx-' + myRoomCode;
+      const statusEl = document.getElementById('host-status');
+      statusEl.textContent = '🟡 Conectando ao servidor WebRTC...';
+      statusEl.style.color = '#ffd32a';
+
+      const peerId = PEER_PREFIX + myRoomCode;
       peer = new Peer(peerId, {
         config: {
           iceServers: [
@@ -875,16 +974,16 @@
       });
 
       peer.on('open', () => {
-        document.getElementById('host-status').textContent = '🟡 Aguardando Player 2 (Tarma Roving) conectar...';
+        statusEl.textContent = '🟡 Sala aberta! Aguardando Player 2 (Tarma Roving) conectar...';
+        statusEl.style.color = '#ffd32a';
       });
 
       peer.on('connection', (conn) => {
         dataConnection = conn;
         isConnected = true;
-        document.getElementById('host-status').textContent = '🟢 Player 2 Conectado! Enviando tela 60 FPS...';
-        document.getElementById('host-status').style.color = '#06d6a0';
+        statusEl.textContent = '🟢 Player 2 Conectado! Enviando tela 60 FPS...';
+        statusEl.style.color = '#06d6a0';
 
-        // Listen for P2 inputs from Guest
         conn.on('data', (data) => {
           if (data && data.type === 'P2_INPUT') {
             injectPlayer2Key(data.btn, data.action === 'down');
@@ -892,13 +991,28 @@
         });
 
         conn.on('close', () => {
-          document.getElementById('host-status').textContent = '🔴 Player 2 desconectou.';
-          document.getElementById('host-status').style.color = '#ff4757';
+          statusEl.textContent = '🔴 Player 2 desconectou.';
+          statusEl.style.color = '#ff4757';
           isConnected = false;
         });
 
+        conn.on('error', (err) => {
+          console.warn('[HOST DATA CONN ERROR]', err);
+        });
+
         // Start Streaming Canvas to Guest
-        setTimeout(startHostStreaming, 800);
+        setTimeout(startHostStreaming, 600);
+      });
+
+      peer.on('error', (err) => {
+        console.warn('[P2P HOST ERROR]', err);
+        if (err.type === 'unavailable-id') {
+          myRoomCode = generateRoomCode();
+          initHostRoom();
+        } else {
+          statusEl.textContent = '⚠️ Alerta WebRTC: ' + (err.message || err.type);
+          statusEl.style.color = '#ff4757';
+        }
       });
     }
 
@@ -906,12 +1020,13 @@
     function startHostStreaming() {
       const canvas = document.querySelector('#game canvas') || document.querySelector('canvas');
       if (!canvas) {
-        if (streamRetryCount++ < 15) {
-          setTimeout(startHostStreaming, 500);
+        if (streamRetryCount++ < 25) {
+          setTimeout(startHostStreaming, 400);
         }
         return;
       }
       if (!dataConnection || !peer) return;
+
       try {
         const captureFn = canvas.captureStream || canvas.mozCaptureStream;
         if (!captureFn) {
@@ -919,6 +1034,7 @@
           return;
         }
         const stream = captureFn.call(canvas, 60);
+
         // Connect Web Audio track if available
         try {
           const alCtx = window.EJS_emulator?.Module?.AL?.currentCtx;
@@ -928,66 +1044,118 @@
           }
         } catch (_) {}
 
+        if (mediaCall) {
+          try { mediaCall.close(); } catch (_) {}
+        }
         mediaCall = peer.call(dataConnection.peer, stream);
+        if (mediaCall) {
+          mediaCall.on('error', (err) => console.warn('mediaCall error:', err));
+        }
       } catch (err) {
         console.warn('Canvas stream capture error:', err);
       }
     }
 
     // Guest Room Connection
-    function connectAsGuest(code) {
-      const cleanCode = (code || '').toUpperCase().trim();
+    function connectAsGuest(rawCode) {
+      const cleanCode = extractRoomCode(rawCode);
+      const statusEl = document.getElementById('join-status');
       if (!cleanCode || cleanCode.length < 3) {
-        document.getElementById('join-status').textContent = '❌ Código inválido!';
-        document.getElementById('join-status').style.color = '#ff4757';
+        statusEl.textContent = '❌ Por favor, digite um código de sala válido (ex: MS96)!';
+        statusEl.style.color = '#ff4757';
         return;
       }
 
-      document.getElementById('join-status').textContent = `📡 Conectando à sala ${cleanCode}...`;
-      document.getElementById('join-status').style.color = '#ffd32a';
+      if (joinInput) joinInput.value = cleanCode;
 
-      if (!peer) {
-        peer = new Peer({
-          config: {
-            iceServers: [
-              { urls: 'stun:stun.l.google.com:19302' },
-              { urls: 'stun:global.stun.twilio.com:3478' }
-            ]
-          }
-        });
-      }
+      cleanupP2P();
+      isHost = false;
+      myRoomCode = cleanCode;
+
+      statusEl.textContent = `📡 Conectando à sala ${cleanCode}...`;
+      statusEl.style.color = '#ffd32a';
+
+      connectTimeoutTimer = setTimeout(() => {
+        if (!isConnected) {
+          statusEl.textContent = `⚠️ Demorando para conectar à sala ${cleanCode}. Verifique se o Host está com a sala aberta.`;
+          statusEl.style.color = '#ff4757';
+        }
+      }, 10000);
+
+      peer = new Peer({
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+          ]
+        }
+      });
 
       peer.on('open', () => {
-        const hostPeerId = 'nopex-mslugx-' + cleanCode;
-        dataConnection = peer.connect(hostPeerId, { reliable: true });
+        statusEl.textContent = `📡 Estabelecendo túnel WebRTC com o Host (${cleanCode})...`;
+        const hostPeerId = PEER_PREFIX + cleanCode;
+        const conn = peer.connect(hostPeerId, { reliable: true });
+        dataConnection = conn;
 
-        dataConnection.on('open', () => {
+        conn.on('open', () => {
+          if (connectTimeoutTimer) clearTimeout(connectTimeoutTimer);
           isConnected = true;
-          myRoomCode = cleanCode;
-          document.getElementById('join-status').textContent = '🟢 Conectado ao Host! Carregando tela...';
-          document.getElementById('join-status').style.color = '#06d6a0';
+          statusEl.textContent = '🟢 Conectado ao Host! Carregando tela...';
+          statusEl.style.color = '#06d6a0';
 
           // Show Guest Video Viewport
           document.getElementById('game-holder').style.display = 'none';
           document.getElementById('guest-view').style.display = 'flex';
+          const guestLoader = document.getElementById('guest-loader');
+          if (guestLoader) guestLoader.style.display = 'flex';
           onlineModal.style.display = 'none';
         });
 
-        dataConnection.on('close', () => {
+        conn.on('close', () => {
           document.getElementById('guest-role-badge').textContent = '🔴 Conexão perdida com o Host.';
           document.getElementById('guest-role-badge').style.borderColor = '#ff4757';
           document.getElementById('guest-role-badge').style.color = '#ff4757';
+          isConnected = false;
+        });
+
+        conn.on('error', (err) => {
+          console.warn('[GUEST CONN ERROR]', err);
+          statusEl.textContent = '❌ Erro ao conectar ao Host: ' + (err.message || err.type);
+          statusEl.style.color = '#ff4757';
         });
       });
 
       // Handle receiving stream from Host
       peer.on('call', (call) => {
+        mediaCall = call;
         call.answer();
         call.on('stream', (remoteStream) => {
           const v = document.getElementById('guest-video');
-          v.srcObject = remoteStream;
-          v.play().catch(() => {});
+          if (v) {
+            v.srcObject = remoteStream;
+            v.onloadedmetadata = () => {
+              v.play().catch(() => {});
+            };
+            v.onplaying = () => {
+              const guestLoader = document.getElementById('guest-loader');
+              if (guestLoader) guestLoader.style.display = 'none';
+            };
+            v.play().catch(() => {});
+          }
         });
+        call.on('error', (err) => console.warn('[MEDIA CALL ERROR]', err));
+      });
+
+      peer.on('error', (err) => {
+        console.warn('[P2P GUEST ERROR]', err);
+        if (connectTimeoutTimer) clearTimeout(connectTimeoutTimer);
+        if (err.type === 'peer-unavailable') {
+          statusEl.textContent = `❌ Sala "${cleanCode}" não encontrada! O Host pode estar offline ou o código está errado.`;
+          statusEl.style.color = '#ff4757';
+        } else {
+          statusEl.textContent = `⚠️ Erro WebRTC: ${err.message || err.type}`;
+          statusEl.style.color = '#ff4757';
+        }
       });
     }
 
