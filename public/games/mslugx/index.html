@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>⚡ METAL SLUG X ⚡ | Nopex Arcade Neo-Geo</title>
+  <title>⚡ METAL SLUG X ⚡ 2P ONLINE CO-OP | Nopex Arcade</title>
   <meta name="description" content="A versão definitiva e tunada de Metal Slug 2 com novas armas (Laser Gun, Iron Lizard), múmias, alienígenas e sem slowdowns!">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
@@ -45,6 +46,47 @@
       height: 100%;
     }
 
+    /* Guest Streaming Viewport */
+    #guest-view {
+      display: none;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      z-index: 50;
+    }
+
+    #guest-video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      background: #000;
+    }
+
+    .role-badge {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(13, 18, 43, 0.92);
+      border: 1.5px solid #00f5ff;
+      color: #00f5ff;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-family: 'Press Start 2P', monospace;
+      box-shadow: 0 0 15px rgba(0, 245, 255, 0.4);
+      pointer-events: none;
+      z-index: 100;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
     /* Floating Header Overlay */
     .floating-bar {
       position: absolute;
@@ -65,11 +107,11 @@
 
     .pill-btn {
       background: rgba(10, 14, 28, 0.88);
-      border: 1px solid #ffa502;
+      border: 1px solid #ff4757;
       backdrop-filter: blur(10px);
       padding: 6px 14px;
       border-radius: 20px;
-      color: #ffa502;
+      color: #ff4757;
       font-weight: 800;
       font-size: 11px;
       text-decoration: none;
@@ -82,9 +124,20 @@
     }
 
     .pill-btn:hover {
-      background: #ffa502;
+      background: #ff4757;
       color: #000;
-      box-shadow: 0 0 15px #ffa502;
+      box-shadow: 0 0 15px #ff4757;
+    }
+
+    .btn-online-glow {
+      border-color: #00f5ff;
+      color: #00f5ff;
+      box-shadow: 0 0 12px rgba(0, 245, 255, 0.4);
+    }
+    .btn-online-glow:hover {
+      background: #00f5ff;
+      color: #000;
+      box-shadow: 0 0 18px #00f5ff;
     }
 
     .floating-title {
@@ -105,11 +158,11 @@
       gap: 8px;
     }
 
-    /* Controls Modal */
-    #controls-modal {
+    /* Modals */
+    .arcade-modal {
       position: fixed;
       inset: 0;
-      background: rgba(4, 7, 20, 0.85);
+      background: rgba(4, 7, 20, 0.88);
       backdrop-filter: blur(8px);
       display: none;
       align-items: center;
@@ -119,20 +172,135 @@
 
     .modal-box {
       background: #0d122b;
-      border: 2px solid #ffa502;
-      border-radius: 12px;
-      padding: 22px 26px;
-      max-width: 480px;
+      border: 2px solid #ff4757;
+      border-radius: 14px;
+      padding: 22px 24px;
+      max-width: 490px;
       width: 92%;
-      box-shadow: 0 0 35px rgba(255, 165, 2, 0.4);
+      box-shadow: 0 0 35px rgba(255, 71, 87, 0.4);
+    }
+
+    .modal-box-online {
+      border-color: #00f5ff;
+      box-shadow: 0 0 35px rgba(0, 245, 255, 0.35);
     }
 
     .modal-title {
       font-family: 'Press Start 2P', monospace;
       font-size: 12px;
       color: #ffd32a;
-      margin-bottom: 16px;
+      margin-bottom: 8px;
       text-align: center;
+    }
+
+    .modal-sub {
+      font-size: 11px;
+      color: #94a3b8;
+      text-align: center;
+      margin-bottom: 16px;
+      line-height: 1.4;
+    }
+
+    /* Tabs */
+    .modal-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      color: #94a3b8;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: #00f5ff;
+      border-color: #00f5ff;
+      color: #000;
+      box-shadow: 0 0 12px rgba(0, 245, 255, 0.5);
+    }
+
+    .tab-panel {
+      display: none;
+    }
+    .tab-panel.active {
+      display: block;
+    }
+
+    .code-card {
+      background: rgba(0, 245, 255, 0.05);
+      border: 2px dashed #00f5ff;
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+
+    .code-label {
+      font-size: 9px;
+      color: #94a3b8;
+      font-family: 'Press Start 2P', monospace;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .code-value {
+      font-size: 28px;
+      font-family: 'Press Start 2P', monospace;
+      color: #ffd32a;
+      letter-spacing: 4px;
+      text-shadow: 0 0 15px rgba(255, 211, 42, 0.8);
+    }
+
+    .invite-box {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .invite-input {
+      flex: 1;
+      background: #060919;
+      border: 1px solid rgba(0, 245, 255, 0.4);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 11px;
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      outline: none;
+    }
+
+    .action-btn {
+      background: #00f5ff;
+      color: #000;
+      font-weight: 900;
+      font-size: 12px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .action-btn:hover {
+      background: #fff;
+      box-shadow: 0 0 12px #fff;
+    }
+
+    .status-msg {
+      font-size: 11px;
+      text-align: center;
+      color: #94a3b8;
+      min-height: 20px;
     }
 
     .controls-grid {
@@ -153,12 +321,17 @@
     }
 
     .key-badge {
-      background: #ffa502;
+      background: #ff4757;
       color: #000;
       font-weight: 900;
       font-size: 11px;
       padding: 2px 8px;
       border-radius: 4px;
+    }
+
+    .key-badge-p2 {
+      background: #00f5ff;
+      color: #000;
     }
 
     .modal-tip {
@@ -171,7 +344,7 @@
 
     .modal-close-btn {
       width: 100%;
-      background: #ffa502;
+      background: #ff4757;
       color: #000;
       font-weight: 900;
       font-size: 13px;
@@ -181,16 +354,98 @@
       cursor: pointer;
       transition: all 0.2s;
     }
-
     .modal-close-btn:hover {
       background: #fff;
-      color: #000;
       box-shadow: 0 0 15px #fff;
+    }
+
+    /* Guest On-Screen Touch Controls */
+    #guest-touch-controls {
+      display: none;
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 80;
+    }
+
+    .touch-dpad {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      width: 130px;
+      height: 130px;
+      pointer-events: auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 4px;
+    }
+
+    .touch-action-pad {
+      position: absolute;
+      bottom: 24px;
+      right: 20px;
+      pointer-events: auto;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .t-btn {
+      background: rgba(13, 18, 43, 0.85);
+      border: 1.5px solid #00f5ff;
+      color: #00f5ff;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 13px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      box-shadow: 0 0 10px rgba(0, 245, 255, 0.3);
+    }
+    .t-btn:active {
+      background: #00f5ff;
+      color: #000;
+    }
+
+    .t-circle {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      font-size: 12px;
+      font-family: 'Press Start 2P', monospace;
+    }
+
+    .guest-top-controls {
+      position: absolute;
+      top: 60px;
+      right: 14px;
+      pointer-events: auto;
+      display: flex;
+      gap: 8px;
+      z-index: 90;
+    }
+
+    .t-pill-btn {
+      padding: 6px 14px;
+      font-size: 10px;
+      border-radius: 20px;
+      background: rgba(13, 18, 43, 0.9);
+      border: 1.5px solid #00f5ff;
+      color: #00f5ff;
+      font-weight: 800;
     }
 
     @media (max-width: 600px) {
       .floating-title { display: none; }
       .pill-btn { padding: 5px 10px; font-size: 10px; }
+      #guest-touch-controls { display: block; }
+      .role-badge { bottom: auto; top: 100px; font-size: 8px; padding: 4px 12px; }
+      .touch-dpad { bottom: 16px; left: 16px; width: 120px; height: 120px; }
+      .touch-action-pad { bottom: 16px; right: 16px; }
     }
   </style>
 </head>
@@ -200,41 +455,101 @@
     <button id="btn-back" class="pill-btn" title="Voltar ao Fliperama 3D (ESC)">
       ⬅️ FLIPERAMA (ESC)
     </button>
-    <div class="floating-title">METAL SLUG X</div>
+    <div class="floating-title">⚡ METAL SLUG X ⚡</div>
     <div class="floating-actions">
+      <button id="btn-online-2p" class="pill-btn btn-online-glow" title="Jogar Online 2P Co-Op">🌐 2P Online</button>
       <button id="btn-controls" class="pill-btn" title="Ver Controles">🎮 Controles</button>
       <button id="btn-fullscreen" class="pill-btn" title="Tela Cheia">🔲</button>
     </div>
   </div>
 
-  <!-- Direct Emulator Mounting Node -->
+  <!-- Direct Emulator Mounting Node (Host) -->
   <div id="game-holder">
     <div id="game"></div>
   </div>
 
+  <!-- Guest Streaming Viewport (Player 2) -->
+  <div id="guest-view">
+    <video id="guest-video" autoplay playsinline muted></video>
+    <div class="role-badge" id="guest-role-badge">🟢 Conectado ao Host • Tarma Roving (P2)</div>
+    
+    <!-- Guest Touch Controls for Mobile -->
+    <div id="guest-touch-controls">
+      <div class="guest-top-controls">
+        <button class="t-btn t-pill-btn" id="touch-coin">🪙 FICHA (6)</button>
+        <button class="t-btn t-pill-btn" id="touch-start">▶ START (2)</button>
+      </div>
+      <div class="touch-dpad">
+        <div style="grid-column:2; grid-row:1;" class="t-btn" id="touch-up">▲</div>
+        <div style="grid-column:1; grid-row:2;" class="t-btn" id="touch-left">◀</div>
+        <div style="grid-column:3; grid-row:2;" class="t-btn" id="touch-right">▶</div>
+        <div style="grid-column:2; grid-row:3;" class="t-btn" id="touch-down">▼</div>
+      </div>
+      <div class="touch-action-pad">
+        <button class="t-btn t-circle" id="touch-shoot" style="background:#ff4757; border-color:#ff4757; color:#000;">A<br><span style="font-size:8px;">TIRO</span></button>
+        <button class="t-btn t-circle" id="touch-jump">B<br><span style="font-size:8px;">PULO</span></button>
+        <button class="t-btn t-circle" id="touch-grenade" style="border-color:#ffd32a; color:#ffd32a;">C<br><span style="font-size:8px;">BOMBA</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Online 2P Co-Op Modal -->
+  <div id="online-modal" class="arcade-modal">
+    <div class="modal-box modal-box-online">
+      <div class="modal-title">⚡ METAL SLUG X 2P CO-OP P2P ⚡</div>
+      <div class="modal-sub">Jogue a mesma missão cooperativa em 2 PCs ou celulares via WebRTC!</div>
+
+      <div class="modal-tabs">
+        <button class="tab-btn active" id="tab-host">Criar Sala (Marco Rossi)</button>
+        <button class="tab-btn" id="tab-join">Entrar em Sala (Tarma)</button>
+      </div>
+
+      <!-- Host Panel -->
+      <div class="tab-panel active" id="panel-host">
+        <div class="code-card">
+          <span class="code-label">CÓDIGO DA SUA SALA</span>
+          <span class="code-value" id="host-code-text">----</span>
+        </div>
+        <div class="invite-box">
+          <input type="text" id="invite-link-input" class="invite-input" readonly placeholder="Gerando link de convite..." />
+          <button id="btn-copy-invite" class="action-btn">📋 Copiar Link</button>
+        </div>
+        <p id="host-status" class="status-msg">🟡 Aguardando Player 2 (Tarma Roving) conectar...</p>
+      </div>
+
+      <!-- Join Panel -->
+      <div class="tab-panel" id="panel-join">
+        <div style="display:flex; gap:8px; margin-bottom:14px;">
+          <input type="text" id="join-room-input" class="invite-input" placeholder="Digite o código (ex: MS96)" maxlength="8" style="text-transform:uppercase; font-weight:bold; font-size:14px; text-align:center;" />
+          <button id="btn-join-room" class="action-btn">🚀 Conectar</button>
+        </div>
+        <p id="join-status" class="status-msg">Digite o código de 4 letras fornecido pelo Host.</p>
+      </div>
+
+      <button id="online-modal-close" class="modal-close-btn" style="background:#00f5ff; margin-top:14px;">VOLTAR AO JOGO</button>
+    </div>
+  </div>
+
   <!-- Controls Modal -->
-  <div id="controls-modal">
+  <div id="controls-modal" class="arcade-modal">
     <div class="modal-box">
       <div class="modal-title">🎮 CONTROLES: METAL SLUG X</div>
       <div class="controls-grid">
-        
-        <div class="ctrl-item"><span>Mover / Mirar / Agachar</span> <span class="key-badge">Setas / D-Pad</span></div>
-  
-        <div class="ctrl-item"><span>Tiro Rápido / Laser Gun</span> <span class="key-badge">A / Z</span></div>
-  
-        <div class="ctrl-item"><span>Pulo / Entrar no Slug</span> <span class="key-badge">B / X</span></div>
-  
-        <div class="ctrl-item"><span>Super Granada / Iron Lizard</span> <span class="key-badge">C / Espaço</span></div>
-  
-        <div class="ctrl-item"><span>Inserir Ficha (Coin)</span> <span class="key-badge">Shift / 5</span></div>
-  
-        <div class="ctrl-item"><span>Start / Pausa</span> <span class="key-badge">Enter / 1</span></div>
-  
+        <div class="ctrl-item"><span>Mover / Mirar / Agachar (P1)</span> <span class="key-badge">Setas / D-Pad</span></div>
+        <div class="ctrl-item"><span>Tiro Rápido / Canhão (P1)</span> <span class="key-badge">A / Z</span></div>
+        <div class="ctrl-item"><span>Pulo / Entrar no Tanque (P1)</span> <span class="key-badge">B / X</span></div>
+        <div class="ctrl-item"><span>Granada / Tanque (P1)</span> <span class="key-badge">C / Espaço</span></div>
+        <div class="ctrl-item"><span>Inserir Ficha (Coin P1)</span> <span class="key-badge">Shift / 5</span></div>
+        <div class="ctrl-item"><span>Start / Pausa (P1)</span> <span class="key-badge">Enter / 1</span></div>
+        <div class="ctrl-item" style="border-top: 1px solid rgba(0,245,255,0.3); margin-top:6px; padding-top:10px;">
+          <span style="color:#00f5ff;">Controles Player 2 (Online / Teclado)</span> 
+          <span class="key-badge key-badge-p2">I, K, J, L + U, O, P</span>
+        </div>
+        <div class="ctrl-item"><span style="color:#00f5ff;">Ficha e Start Player 2</span> <span class="key-badge key-badge-p2">Teclas 6 e 2</span></div>
       </div>
       <div class="modal-tip">
         🕹️ <b>Controle USB / Bluetooth:</b> Conecte controle (Xbox, PS, 8BitDo) – detectado automaticamente!<br>
-        🪙 <b>Ficha:</b> Pressione <span style="color:#ffd32a">Shift</span> ou <span style="color:#ffd32a">5</span> para inserir crédito.<br>
-        📱 <b>Celular / Touch:</b> D-Pad e botões A/B/C touch na tela adaptados a 60 FPS fluído.
+        🪙 <b>Player 2 Ficha/Start:</b> O Convidado pode apertar <span style="color:#00f5ff">6</span> (Ficha) e <span style="color:#00f5ff">2</span> (Start) para entrar com Tarma Roving!
       </div>
       <button id="modal-close" class="modal-close-btn">FECHAR E JOGAR</button>
     </div>
@@ -269,6 +584,15 @@
     document.getElementById('modal-close').addEventListener('click', () => modal.style.display = 'none');
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
 
+    // Online modal
+    const onlineModal = document.getElementById('online-modal');
+    document.getElementById('btn-online-2p').addEventListener('click', () => {
+      onlineModal.style.display = 'flex';
+      if (!myRoomCode && isHost) initHostRoom();
+    });
+    document.getElementById('online-modal-close').addEventListener('click', () => onlineModal.style.display = 'none');
+    onlineModal.addEventListener('click', (e) => { if (e.target === onlineModal) onlineModal.style.display = 'none'; });
+
     // Fullscreen
     document.getElementById('btn-fullscreen').addEventListener('click', () => {
       if (!document.fullscreenElement) {
@@ -299,11 +623,364 @@
     }, { passive: true });
     window.addEventListener('keydown', resumeAudio);
 
-    // EmulatorJS Ultra-Performance Configuration
+    // =============================================
+    //  NETPLAY 2-PLAYER P2P REMOTE CONTROLLER ENGINE
+    // =============================================
+    let peer = null;
+    let dataConnection = null;
+    let mediaCall = null;
+    let myRoomCode = '';
+    let isHost = true;
+    let isConnected = false;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const joinCodeParam = urlParams.get('room');
+    if (joinCodeParam) {
+      isHost = false;
+    }
+
+    function generateRoomCode() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let code = '';
+      for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+      return code;
+    }
+
+    function getInviteUrl(code) {
+      const base = window.location.href.split('?')[0].split('#')[0];
+      return base + '?room=' + (code || myRoomCode);
+    }
+
+    async function copyTextToClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch (_) {}
+      }
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const success = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        return success;
+      } catch (_) {}
+      return false;
+    }
+
+    // Tab switching in online modal
+    const tabHost = document.getElementById('tab-host');
+    const tabJoin = document.getElementById('tab-join');
+    const panelHost = document.getElementById('panel-host');
+    const panelJoin = document.getElementById('panel-join');
+
+    tabHost.addEventListener('click', () => {
+      tabHost.classList.add('active');
+      tabJoin.classList.remove('active');
+      panelHost.classList.add('active');
+      panelJoin.classList.remove('active');
+      if (!myRoomCode && isHost) initHostRoom();
+    });
+
+    tabJoin.addEventListener('click', () => {
+      tabJoin.classList.add('active');
+      tabHost.classList.remove('active');
+      panelJoin.classList.add('active');
+      panelHost.classList.remove('active');
+    });
+
+    // Copy Invite Link
+    const btnCopyInvite = document.getElementById('btn-copy-invite');
+    const inviteLinkInput = document.getElementById('invite-link-input');
+    async function handleCopyInvite() {
+      const url = getInviteUrl(myRoomCode);
+      if (inviteLinkInput) {
+        inviteLinkInput.value = url;
+        inviteLinkInput.select();
+      }
+      await copyTextToClipboard(url);
+      btnCopyInvite.textContent = '✅ Copiado!';
+      btnCopyInvite.style.background = '#06d6a0';
+      setTimeout(() => {
+        btnCopyInvite.textContent = '📋 Copiar Link';
+        btnCopyInvite.style.background = '';
+      }, 2000);
+    }
+    btnCopyInvite.addEventListener('click', handleCopyInvite);
+    inviteLinkInput.addEventListener('click', handleCopyInvite);
+
+    // Synthetic Player 2 Key Injection (Host Side)
+    // Maps Player 2 keys directly into the Neo Geo emulator core
+    const p2KeyMap = {
+      UP:      { key: 'i', code: 'KeyI', keyCode: 73 },
+      DOWN:    { key: 'k', code: 'KeyK', keyCode: 75 },
+      LEFT:    { key: 'j', code: 'KeyJ', keyCode: 74 },
+      RIGHT:   { key: 'l', code: 'KeyL', keyCode: 76 },
+      SHOOT:   { key: 'u', code: 'KeyU', keyCode: 85 }, // A (Fire)
+      JUMP:    { key: 'o', code: 'KeyO', keyCode: 79 }, // B (Jump)
+      GRENADE: { key: 'p', code: 'KeyP', keyCode: 80 }, // C (Grenade)
+      COIN:    { key: '6', code: 'Digit6', keyCode: 54 }, // Coin P2
+      START:   { key: '2', code: 'Digit2', keyCode: 50 }  // Start P2
+    };
+
+    function injectPlayer2Key(btnName, isDown) {
+      const m = p2KeyMap[btnName];
+      if (!m) return;
+      const type = isDown ? 'keydown' : 'keyup';
+      const evt = new KeyboardEvent(type, {
+        key: m.key,
+        code: m.code,
+        keyCode: m.keyCode,
+        which: m.keyCode,
+        bubbles: true,
+        cancelable: true
+      });
+      window.dispatchEvent(evt);
+      document.dispatchEvent(evt);
+      const canvas = document.querySelector('#game canvas');
+      if (canvas) canvas.dispatchEvent(evt);
+    }
+
+    // Host Room Initialization
+    function initHostRoom() {
+      if (peer) return;
+      myRoomCode = generateRoomCode();
+      document.getElementById('host-code-text').textContent = myRoomCode;
+      inviteLinkInput.value = getInviteUrl(myRoomCode);
+
+      const peerId = 'nopex-mslugx-' + myRoomCode;
+      peer = new Peer(peerId, {
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+          ]
+        }
+      });
+
+      peer.on('open', () => {
+        document.getElementById('host-status').textContent = '🟡 Aguardando Player 2 (Tarma Roving) conectar...';
+      });
+
+      peer.on('connection', (conn) => {
+        dataConnection = conn;
+        isConnected = true;
+        document.getElementById('host-status').textContent = '🟢 Player 2 Conectado! Enviando tela 60 FPS...';
+        document.getElementById('host-status').style.color = '#06d6a0';
+
+        // Listen for P2 inputs from Guest
+        conn.on('data', (data) => {
+          if (data && data.type === 'P2_INPUT') {
+            injectPlayer2Key(data.btn, data.action === 'down');
+          }
+        });
+
+        conn.on('close', () => {
+          document.getElementById('host-status').textContent = '🔴 Player 2 desconectou.';
+          document.getElementById('host-status').style.color = '#ff4757';
+          isConnected = false;
+        });
+
+        // Start Streaming Canvas to Guest
+        setTimeout(startHostStreaming, 800);
+      });
+    }
+
+    let streamRetryCount = 0;
+    function startHostStreaming() {
+      const canvas = document.querySelector('#game canvas') || document.querySelector('canvas');
+      if (!canvas) {
+        if (streamRetryCount++ < 15) {
+          setTimeout(startHostStreaming, 500);
+        }
+        return;
+      }
+      if (!dataConnection || !peer) return;
+      try {
+        const captureFn = canvas.captureStream || canvas.mozCaptureStream;
+        if (!captureFn) {
+          console.warn('captureStream not supported in this browser.');
+          return;
+        }
+        const stream = captureFn.call(canvas, 60);
+        // Connect Web Audio track if available
+        try {
+          const alCtx = window.EJS_emulator?.Module?.AL?.currentCtx;
+          if (alCtx?.audioCtx) {
+            const dest = alCtx.audioCtx.createMediaStreamDestination();
+            dest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+          }
+        } catch (_) {}
+
+        mediaCall = peer.call(dataConnection.peer, stream);
+      } catch (err) {
+        console.warn('Canvas stream capture error:', err);
+      }
+    }
+
+    // Guest Room Connection
+    function connectAsGuest(code) {
+      const cleanCode = (code || '').toUpperCase().trim();
+      if (!cleanCode || cleanCode.length < 3) {
+        document.getElementById('join-status').textContent = '❌ Código inválido!';
+        document.getElementById('join-status').style.color = '#ff4757';
+        return;
+      }
+
+      document.getElementById('join-status').textContent = `📡 Conectando à sala ${cleanCode}...`;
+      document.getElementById('join-status').style.color = '#ffd32a';
+
+      if (!peer) {
+        peer = new Peer({
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:global.stun.twilio.com:3478' }
+            ]
+          }
+        });
+      }
+
+      peer.on('open', () => {
+        const hostPeerId = 'nopex-mslugx-' + cleanCode;
+        dataConnection = peer.connect(hostPeerId, { reliable: true });
+
+        dataConnection.on('open', () => {
+          isConnected = true;
+          myRoomCode = cleanCode;
+          document.getElementById('join-status').textContent = '🟢 Conectado ao Host! Carregando tela...';
+          document.getElementById('join-status').style.color = '#06d6a0';
+
+          // Show Guest Video Viewport
+          document.getElementById('game-holder').style.display = 'none';
+          document.getElementById('guest-view').style.display = 'flex';
+          onlineModal.style.display = 'none';
+        });
+
+        dataConnection.on('close', () => {
+          document.getElementById('guest-role-badge').textContent = '🔴 Conexão perdida com o Host.';
+          document.getElementById('guest-role-badge').style.borderColor = '#ff4757';
+          document.getElementById('guest-role-badge').style.color = '#ff4757';
+        });
+      });
+
+      // Handle receiving stream from Host
+      peer.on('call', (call) => {
+        call.answer();
+        call.on('stream', (remoteStream) => {
+          const v = document.getElementById('guest-video');
+          v.srcObject = remoteStream;
+          v.play().catch(() => {});
+        });
+      });
+    }
+
+    document.getElementById('btn-join-room').addEventListener('click', () => {
+      connectAsGuest(document.getElementById('join-room-input').value);
+    });
+
+    document.getElementById('join-room-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') connectAsGuest(document.getElementById('join-room-input').value);
+    });
+
+    // Guest Input Sender
+    function sendGuestInput(btnName, isDown) {
+      if (!dataConnection || !dataConnection.open) return;
+      dataConnection.send({
+        type: 'P2_INPUT',
+        btn: btnName,
+        action: isDown ? 'down' : 'up'
+      });
+    }
+
+    // Guest Keyboard Event Listeners (Natural Arcade Controls)
+    const guestKeyMap = {
+      ArrowUp:    'UP',      KeyW: 'UP',
+      ArrowDown:  'DOWN',    KeyS: 'DOWN',
+      ArrowLeft:  'LEFT',    KeyA: 'LEFT',
+      ArrowRight: 'RIGHT',   KeyD: 'RIGHT',
+      KeyJ: 'SHOOT',   KeyZ: 'SHOOT', KeyU: 'SHOOT',
+      KeyK: 'JUMP',    KeyX: 'JUMP',  KeyO: 'JUMP',
+      KeyL: 'GRENADE', KeyC: 'GRENADE', Space: 'GRENADE', KeyP: 'GRENADE',
+      Digit6: 'COIN',  ShiftLeft: 'COIN', ShiftRight: 'COIN',
+      Digit2: 'START', Enter: 'START', Digit1: 'START'
+    };
+
+    window.addEventListener('keydown', (e) => {
+      if (!isHost && isConnected) {
+        const btn = guestKeyMap[e.code] || guestKeyMap[e.key];
+        if (btn) {
+          e.preventDefault();
+          sendGuestInput(btn, true);
+        }
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (!isHost && isConnected) {
+        const btn = guestKeyMap[e.code] || guestKeyMap[e.key];
+        if (btn) {
+          e.preventDefault();
+          sendGuestInput(btn, false);
+        }
+      }
+    });
+
+    // Guest Touch Controls Binding (Mobile)
+    function bindTouchBtn(elementId, btnName) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      el.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        sendGuestInput(btnName, true);
+      });
+      el.addEventListener('pointerup', (e) => {
+        e.preventDefault();
+        sendGuestInput(btnName, false);
+      });
+      el.addEventListener('pointercancel', (e) => {
+        e.preventDefault();
+        sendGuestInput(btnName, false);
+      });
+    }
+
+    bindTouchBtn('touch-up', 'UP');
+    bindTouchBtn('touch-down', 'DOWN');
+    bindTouchBtn('touch-left', 'LEFT');
+    bindTouchBtn('touch-right', 'RIGHT');
+    bindTouchBtn('touch-shoot', 'SHOOT');
+    bindTouchBtn('touch-jump', 'JUMP');
+    bindTouchBtn('touch-grenade', 'GRENADE');
+    bindTouchBtn('touch-coin', 'COIN');
+    bindTouchBtn('touch-start', 'START');
+
+    // Auto-unmute guest video on first user interaction
+    const unmuteGuest = () => {
+      const v = document.getElementById('guest-video');
+      if (v && v.muted) v.muted = false;
+    };
+    window.addEventListener('click', unmuteGuest);
+    window.addEventListener('touchstart', unmuteGuest, { passive: true });
+    window.addEventListener('keydown', unmuteGuest);
+
+    // Auto-connect if URL has ?room=XXXX
+    if (joinCodeParam) {
+      setTimeout(() => {
+        connectAsGuest(joinCodeParam);
+      }, 500);
+    }
+
+    // =============================================
+    //  EMULATORJS CONFIGURATION (HOST & OFFLINE)
+    // =============================================
     window.EJS_player = '#game';
     window.EJS_core = 'arcade';
     window.EJS_gameName = 'METAL SLUG X';
-    window.EJS_color = '#ffa502';
+    window.EJS_color = '#ff4757';
     window.EJS_startOnLoaded = true;
     window.EJS_threads = false;      // Single-threaded WASM avoids COOP/COEP isolation locks
     window.EJS_shaders = false;      // Zero shader overhead for max frame stability
@@ -316,7 +993,35 @@
       "vsync": "enabled"
     };
 
-    // RetroArch audio & frame synchronization tuning to eliminate buffer starvation and micro-freezes
+    // Pre-mapped Player 1 & Player 2 default controls for Neo-Geo Arcade
+    window.EJS_defaultControls = {
+      0: { // Player 1 (Marco Rossi)
+        0: { value: 'x' },         // B (Jump)
+        1: { value: 'z' },         // Y (Shoot)
+        2: { value: 'Shift' },     // Select / Coin P1
+        3: { value: 'Enter' },     // Start P1
+        4: { value: 'ArrowUp' },    // Up
+        5: { value: 'ArrowDown' },  // Down
+        6: { value: 'ArrowLeft' },  // Left
+        7: { value: 'ArrowRight' }, // Right
+        8: { value: ' ' },         // A (Grenade)
+        9: { value: 'a' }
+      },
+      1: { // Player 2 (Tarma Roving - Online injected)
+        0: { value: 'o' },         // B (Jump P2)
+        1: { value: 'u' },         // Y (Shoot P2)
+        2: { value: '6' },         // Select / Coin P2
+        3: { value: '2' },         // Start P2
+        4: { value: 'i' },         // Up P2
+        5: { value: 'k' },         // Down P2
+        6: { value: 'j' },         // Left P2
+        7: { value: 'l' },         // Right P2
+        8: { value: 'p' },         // A (Grenade P2)
+        9: { value: '[' }
+      }
+    };
+
+    // RetroArch audio & frame synchronization tuning
     window.EJS_ready = () => {
       const gm = window.EJS_emulator?.gameManager;
       if (gm && gm.FS) {
@@ -337,7 +1042,14 @@
 
     window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
     window.EJS_gameUrl = 'roms/mslugx.zip';
+
+    // Only boot the 30MB emulator on Host or solo play.
+    // Guest gets low-latency 60FPS stream immediately!
+    if (isHost) {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
+      document.body.appendChild(s);
+    }
   </script>
-  <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
 </body>
 </html>
